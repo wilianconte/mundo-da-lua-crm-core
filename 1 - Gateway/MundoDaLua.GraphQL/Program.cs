@@ -61,6 +61,7 @@ var app = builder.Build();
 await app.MigrateAllDbContextsAsync();
 
 app.UseAuthentication();
+app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
 
 app.MapGraphQL();

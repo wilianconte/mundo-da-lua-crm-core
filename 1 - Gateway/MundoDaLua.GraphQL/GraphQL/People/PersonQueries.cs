@@ -1,5 +1,6 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.People;
@@ -7,6 +8,7 @@ namespace MyCRM.GraphQL.GraphQL.People;
 [QueryType]
 public sealed class PersonQueries
 {
+    [Authorize]
     [UsePaging]
     [UseProjection]
     [UseFiltering]
@@ -14,6 +16,7 @@ public sealed class PersonQueries
     public IQueryable<Person> GetPeople([Service] CRMDbContext db) =>
         db.People.AsNoTracking();
 
+    [Authorize]
     public async Task<Person?> GetPersonByIdAsync(
         Guid id,
         [Service] CRMDbContext db,
