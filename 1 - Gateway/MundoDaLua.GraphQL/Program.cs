@@ -56,7 +56,12 @@ builder.Services
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
     .AddFiltering()
     .AddSorting()
-    .AddProjections();
+    .AddProjections()
+    .ModifyCostOptions(o =>
+    {
+        o.MaxFieldCost = 100_000;
+        o.MaxTypeCost = 100_000;
+    });
 
 var app = builder.Build();
 
