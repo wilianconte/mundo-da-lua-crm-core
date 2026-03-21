@@ -18,6 +18,8 @@ builder.Services.AddScoped<ITenantService, HttpTenantService>();
 
 // Autenticação JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
+builder.Services.AddAuthorization();
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
