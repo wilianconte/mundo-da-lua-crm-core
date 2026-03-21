@@ -7,7 +7,7 @@ namespace MyCRM.GraphQL.GraphQL.People;
 [QueryType]
 public sealed class PersonQueries
 {
-    [UsePaging]
+    [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]

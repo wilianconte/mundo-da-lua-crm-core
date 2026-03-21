@@ -7,7 +7,7 @@ namespace MyCRM.GraphQL.GraphQL.Customers;
 [QueryType]
 public class CustomerQueries
 {
-    [UsePaging]
+    [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
