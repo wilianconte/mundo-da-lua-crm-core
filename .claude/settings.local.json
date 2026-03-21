@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet tool:*)",
+      "Bash($env:PATH = \"$env:USERPROFILE\\\\.dotnet\\\\tools;$env:PATH\")",
+      "Bash(export PATH=\"$HOME/.dotnet/tools:$PATH\")",
+      "Bash(powershell -Command \":*)"
+    ]
+  }
+}

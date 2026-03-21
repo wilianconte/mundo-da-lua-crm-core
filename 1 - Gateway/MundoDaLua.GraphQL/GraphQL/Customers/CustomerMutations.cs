@@ -1,0 +1,52 @@
+using MyCRM.CRM.Application.Commands.ActivateCustomer;
+using MyCRM.CRM.Application.Commands.CreateCustomer;
+using MyCRM.CRM.Application.Commands.DeactivateCustomer;
+using MyCRM.CRM.Application.Commands.DeleteCustomer;
+using MyCRM.CRM.Application.Commands.SetCustomerAddress;
+using MyCRM.CRM.Application.Commands.UpdateCustomer;
+using MyCRM.CRM.Application.DTOs;
+using MediatR;
+using MyCRM.GraphQL.GraphQL.Customers.Inputs;
+using MyCRM.Shared.Kernel.Results;
+
+namespace MyCRM.GraphQL.GraphQL.Customers;
+
+[MutationType]
+public class CustomerMutations
+{
+    public async Task<CustomerDto> CreateCustomerAsync(CreateCustomerInput input, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new CreateCustomerCommand(input.Name, input.Email, input.Type, input.Phone, input.Document), ct);
+        return result.IsSuccess ? result.Value! : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    public async Task<CustomerDto> UpdateCustomerAsync(UpdateCustomerInput input, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new UpdateCustomerCommand(input.Id, input.Name, input.Email, input.Phone, input.Document, input.Notes), ct);
+        return result.IsSuccess ? result.Value! : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    public async Task<CustomerDto> SetCustomerAddressAsync(SetCustomerAddressInput input, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new SetCustomerAddressCommand(input.CustomerId, input.Street, input.Number, input.Complement, input.Neighborhood, input.City, input.State, input.ZipCode, input.Country), ct);
+        return result.IsSuccess ? result.Value! : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    public async Task<bool> ActivateCustomerAsync(Guid id, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new ActivateCustomerCommand(id), ct);
+        return result.IsSuccess ? true : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    public async Task<bool> DeactivateCustomerAsync(Guid id, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new DeactivateCustomerCommand(id), ct);
+        return result.IsSuccess ? true : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    public async Task<bool> DeleteCustomerAsync(Guid id, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new DeleteCustomerCommand(id), ct);
+        return result.IsSuccess ? true : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+}

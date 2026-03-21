@@ -1,0 +1,76 @@
+# ── Build outputs ─────────────────────────────────────────────────────────────
+bin/
+obj/
+out/
+publish/
+
+# ── .NET / MSBuild ────────────────────────────────────────────────────────────
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.ncrunchsolution
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ── Visual Studio ─────────────────────────────────────────────────────────────
+.vs/
+*.rsuser
+*.vspx
+*.sap
+*.vcxproj.filters
+
+# ── Rider / JetBrains ─────────────────────────────────────────────────────────
+.idea/
+*.sln.iml
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ── NuGet ─────────────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+nuget.config
+
+# ── Test results ──────────────────────────────────────────────────────────────
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+lcov.info
+coverage.json
+coverage.cobertura.xml
+
+# ── EF Core migrations snapshot (keep migration files, ignore designer) ────────
+# Uncomment if you prefer not to track snapshot:
+# **/Migrations/*ModelSnapshot.cs
+
+# ── Secrets & environment ─────────────────────────────────────────────────────
+*.env
+.env
+.env.*
+!.env.example
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+secrets.json
+**/*secrets*.json
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+Serilog/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

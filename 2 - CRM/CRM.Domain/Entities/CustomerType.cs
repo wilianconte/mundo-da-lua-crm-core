@@ -1,0 +1,7 @@
+namespace MyCRM.CRM.Domain.Entities;
+
+public enum CustomerType
+{
+    Individual = 1,
+    Company = 2
+}
