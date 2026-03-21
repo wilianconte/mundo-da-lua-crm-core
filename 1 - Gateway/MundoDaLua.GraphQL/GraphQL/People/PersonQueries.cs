@@ -1,6 +1,6 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authorization;
+using HotChocolate.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.People;
