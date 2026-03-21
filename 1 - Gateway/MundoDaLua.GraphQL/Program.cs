@@ -9,7 +9,6 @@ using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using System.Text;
-using HotChocolate.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,8 +56,7 @@ builder.Services
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
     .AddFiltering()
     .AddSorting()
-    .AddProjections()
-    .AddAuthorizationCore();
+    .AddProjections();
 
 var app = builder.Build();
 
