@@ -15,7 +15,7 @@ public static class MigrationExtensions
         var customersDb = sp.GetRequiredService<CRMDbContext>();
         var authDb = sp.GetRequiredService<AuthDbContext>();
 
-        await ResetMigrationsIfSchemaLostAsync(customersDb, "customers", "customers");
+        await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
         await customersDb.Database.MigrateAsync();
 
         await authDb.Database.MigrateAsync();

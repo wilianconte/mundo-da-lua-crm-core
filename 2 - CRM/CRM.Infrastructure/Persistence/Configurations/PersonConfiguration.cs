@@ -43,12 +43,12 @@ public sealed class PersonConfiguration : IEntityTypeConfiguration<Person>
         // Unique document number per tenant — partial index ignores NULLs
         builder.HasIndex(x => new { x.TenantId, x.DocumentNumber })
             .IsUnique()
-            .HasFilter("document_number IS NOT NULL");
+            .HasFilter("\"DocumentNumber\" IS NOT NULL");
 
         // Unique email per tenant — partial index ignores NULLs
         builder.HasIndex(x => new { x.TenantId, x.Email })
             .IsUnique()
-            .HasFilter("email IS NOT NULL");
+            .HasFilter("\"Email\" IS NOT NULL");
 
         builder.HasIndex(x => new { x.TenantId, x.Status });
         builder.HasIndex(x => x.IsDeleted);
