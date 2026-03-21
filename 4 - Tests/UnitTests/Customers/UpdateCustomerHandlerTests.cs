@@ -1,4 +1,4 @@
-using MyCRM.CRM.Application.Commands.UpdateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.UpdateCustomer;
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Domain.Repositories;
 using NSubstitute;
@@ -88,3 +88,5 @@ public sealed class UpdateCustomerHandlerTests
         Assert.Equal("CUSTOMER_EMAIL_DUPLICATE", result.ErrorCode);
     }
 }
+
+

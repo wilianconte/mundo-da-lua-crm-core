@@ -1,4 +1,4 @@
-using MyCRM.CRM.Application.Commands.CreateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.CreateCustomer;
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Domain.Repositories;
 using NSubstitute;
@@ -48,3 +48,5 @@ public sealed class CreateCustomerHandlerTests
         Assert.Equal("CUSTOMER_EMAIL_DUPLICATE", result.ErrorCode);
     }
 }
+
+

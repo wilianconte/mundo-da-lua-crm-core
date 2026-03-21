@@ -1,4 +1,4 @@
-using MyCRM.CRM.Application.Commands.DeleteCustomer;
+using MyCRM.CRM.Application.Commands.Customers.DeleteCustomer;
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Domain.Repositories;
 using NSubstitute;
@@ -61,3 +61,5 @@ public sealed class DeleteCustomerHandlerTests
         _repository.DidNotReceive().Delete(Arg.Any<Customer>());
     }
 }
+
+

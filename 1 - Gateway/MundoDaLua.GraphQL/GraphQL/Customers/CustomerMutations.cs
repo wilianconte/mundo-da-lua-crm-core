@@ -1,9 +1,9 @@
-using MyCRM.CRM.Application.Commands.ActivateCustomer;
-using MyCRM.CRM.Application.Commands.CreateCustomer;
-using MyCRM.CRM.Application.Commands.DeactivateCustomer;
-using MyCRM.CRM.Application.Commands.DeleteCustomer;
-using MyCRM.CRM.Application.Commands.SetCustomerAddress;
-using MyCRM.CRM.Application.Commands.UpdateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.ActivateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.CreateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.DeactivateCustomer;
+using MyCRM.CRM.Application.Commands.Customers.DeleteCustomer;
+using MyCRM.CRM.Application.Commands.Customers.SetCustomerAddress;
+using MyCRM.CRM.Application.Commands.Customers.UpdateCustomer;
 using MyCRM.CRM.Application.DTOs;
 using MediatR;
 using MyCRM.GraphQL.GraphQL.Customers.Inputs;
@@ -50,3 +50,4 @@ public class CustomerMutations
         return result.IsSuccess ? true : throw new GraphQLException(result.Errors.Select(e => ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 }
+

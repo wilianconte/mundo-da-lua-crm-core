@@ -22,6 +22,7 @@ public static class DependencyInjection
         var config = TypeAdapterConfig.GlobalSettings;
         config.Scan(assembly);
         new CustomerMappingConfig().Register(config);
+        new PersonMappingConfig().Register(config);
 
         return services;
     }

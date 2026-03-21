@@ -395,6 +395,112 @@ public sealed class CreatePersonHandler : IRequestHandler<CreatePersonCommand, R
 
 ---
 
+## CRUD PADRÃO OBRIGATÓRIO POR ENTIDADE
+
+**Toda vez que uma nova entidade for criada, os seguintes artefatos devem ser gerados automaticamente, sem precisar ser solicitados:**
+
+### Application Layer (`{Modulo}.Application`)
+
+| Artefato | Caminho |
+|---|---|
+| `Get{Entidade}ByIdQuery` + Handler | `Queries/Get{Entidade}ById/` |
+| `GetAll{Entidades}Query` + Handler | `Queries/GetAll{Entidades}/` |
+| `Create{Entidade}Command` + Handler + Validator | `Commands/{Entidades}/Create{Entidade}/` |
+| `Update{Entidade}Command` + Handler + Validator | `Commands/{Entidades}/Update{Entidade}/` |
+| `Delete{Entidade}Command` + Handler | `Commands/{Entidades}/Delete{Entidade}/` |
+| `{Entidade}Dto` | `DTOs/` |
+| Mapping config Mapster | `Mappings/` |
+
+**Convenção de subpastas em `Commands/`:**
+- Organizar por entidade usando o **plural** da entidade como subpasta: `Commands/{Entidades}/{Operacao}{Entidade}/`
+- Usar plural para evitar colisão de namespace com a classe de domínio de mesmo nome
+- Exemplos: `Commands/People/CreatePerson/`, `Commands/Customers/DeleteCustomer/`
+- Namespace resultante: `MyCRM.{Modulo}.Application.Commands.{Entidades}.{Operacao}{Entidade}`
+
+### GraphQL Layer (`MyCRM.GraphQL`)
+
+| Artefato | Caminho |
+|---|---|
+| `{Entidade}Queries` — `Get{Entidades}` (lista paginada) + `Get{Entidade}ById` | `GraphQL/{Modulo}/` |
+| `{Entidade}Mutations` — `Create`, `Update`, `Delete` | `GraphQL/{Modulo}/` |
+| `{Entidade}Input` (Create e Update separados) | `GraphQL/{Modulo}/` |
+| `{Entidade}Payload` | `GraphQL/{Modulo}/` |
+
+### Padrão de Queries GraphQL
+
+```csharp
+[QueryType]
+public sealed class {Entidade}Queries
+{
+    [Authorize(Policy = "{modulo}:{recurso}:read")]
+    [UsePaging]
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    public IQueryable<{Entidade}> Get{Entidades}([Service] {Modulo}DbContext db) =>
+        db.{Entidades}.AsNoTracking();
+
+    [Authorize(Policy = "{modulo}:{recurso}:read")]
+    public async Task<{Entidade}?> Get{Entidade}ByIdAsync(
+        Guid id,
+        [Service] {Modulo}DbContext db,
+        CancellationToken ct) =>
+        await db.{Entidades}.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+}
+```
+
+### Padrão de Mutations GraphQL
+
+```csharp
+[MutationType]
+public sealed class {Entidade}Mutations
+{
+    [Authorize(Policy = "{modulo}:{recurso}:write")]
+    public async Task<{Entidade}Payload> Create{Entidade}Async(
+        Create{Entidade}Input input,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new Create{Entidade}Command(input), ct);
+        return result.IsSuccess
+            ? new {Entidade}Payload(result.Value!)
+            : throw new GraphQLException(
+                result.Errors.Select(e =>
+                    ErrorBuilder.New()
+                        .SetMessage(e)
+                        .SetExtension("code", result.ErrorCode)
+                        .Build()));
+    }
+
+    [Authorize(Policy = "{modulo}:{recurso}:write")]
+    public async Task<{Entidade}Payload> Update{Entidade}Async(
+        Guid id, Update{Entidade}Input input,
+        [Service] ISender sender,
+        CancellationToken ct) { /* idem */ }
+
+    [Authorize(Policy = "{modulo}:{recurso}:write")]
+    public async Task<bool> Delete{Entidade}Async(
+        Guid id,
+        [Service] ISender sender,
+        CancellationToken ct) { /* idem */ }
+}
+```
+
+### Checklist CRUD obrigatório
+
+- [ ] `Get{Entidade}ByIdQuery` + Handler
+- [ ] `GetAll{Entidades}Query` + Handler (`AsNoTracking`, retorna `IQueryable` ou lista)
+- [ ] `Create{Entidade}Command` + Handler + Validator
+- [ ] `Update{Entidade}Command` + Handler + Validator
+- [ ] `Delete{Entidade}Command` + Handler (soft delete)
+- [ ] `{Entidade}Dto` + mapping Mapster
+- [ ] `{Entidade}Queries` no GraphQL (lista paginada + por ID)
+- [ ] `{Entidade}Mutations` no GraphQL (create, update, delete)
+- [ ] Inputs e payloads explícitos (`Create{Entidade}Input`, `Update{Entidade}Input`, `{Entidade}Payload`)
+- [ ] Policies de autorização aplicadas (`{modulo}:{recurso}:read` e `{modulo}:{recurso}:write`)
+
+---
+
 ## PADRÃO GRAPHQL
 
 ```csharp
@@ -491,6 +597,42 @@ Exemplos: `crm:person:read`, `crm:person:write`, `escola:aluno:read`, `clinica:a
 - [ ] Migration gerada e testada?
 - [ ] `ResetMigrationsIfSchemaLostAsync` verificando schema/tabela corretos?
 - [ ] **Skill `core.md` atualizada com novos conhecimentos?**
+
+---
+
+## FLUXO OBRIGATÓRIO PARA TESTES DE CONSULTA GRAPHQL
+
+**Toda vez que for testar uma query ou mutation GraphQL, seguir este fluxo sem exceção:**
+
+### Passo 1 — Obter o token JWT
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:5095/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"mutation { login(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", email: \"admin@mundodalua.com\", password: \"Admin@123\" }) { token } }"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+```
+
+Credenciais de seed (ambiente de dev):
+- **TenantId:** `00000000-0000-0000-0000-000000000001`
+- **Email:** `admin@mundodalua.com`
+- **Senha:** `Admin@123`
+
+### Passo 2 — Executar a consulta com o token
+
+```bash
+curl -s -X POST http://localhost:5095/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"query":"{ suaQueryAqui }"}'
+```
+
+### Observações críticas
+
+- O tenant **não** vem de header HTTP — vem do claim `tenant_id` dentro do JWT
+- A porta padrão de dev é **5095** (definida em `launchSettings.json`)
+- O campo do token no `LoginDto` é **`token`**, não `accessToken`
+- Sempre verificar se a aplicação está rodando antes de testar (`dotnet run --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj"`)
 
 ---
 
