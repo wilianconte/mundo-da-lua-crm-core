@@ -18,6 +18,7 @@ public static class MigrationExtensions
         await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
         await customersDb.Database.MigrateAsync();
 
+        await ResetMigrationsIfSchemaLostAsync(authDb, "auth", "users");
         await authDb.Database.MigrateAsync();
 
         var tenantService = sp.GetRequiredService<ITenantService>();
@@ -35,6 +36,6 @@ public static class MigrationExtensions
         var exists = (bool)(await cmd.ExecuteScalarAsync() ?? false);
 
         if (!exists)
-            await db.Database.ExecuteSqlRawAsync("DELETE FROM \"__EFMigrationsHistory\"");
+            await db.Database.ExecuteSqlRawAsync($"DELETE FROM \"{schema}\".\"__EFMigrationsHistory\"");
     }
 }
