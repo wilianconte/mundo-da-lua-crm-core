@@ -23,6 +23,7 @@ public static class DependencyInjection
         config.Scan(assembly);
         new CustomerMappingConfig().Register(config);
         new PersonMappingConfig().Register(config);
+        new CompanyMappingConfig().Register(config);
 
         return services;
     }

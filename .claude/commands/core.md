@@ -86,7 +86,7 @@ Shared.Kernel ← todos
 
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
-| `crm` | `CRMDbContext` | `customers`, `people` | CRM |
+| `crm` | `CRMDbContext` | `customers`, `people`, `companies` | CRM |
 | `auth` | `AuthDbContext` | `users` | Auth |
 
 Schemas planejados (ainda não implementados):
@@ -118,6 +118,27 @@ Person 1──0..1  Supplier    (FK em Supplier.PersonId)
 ```
 
 Enums em `MyCRM.CRM.Domain.Entities`: `PersonStatus`, `Gender`, `MaritalStatus`.
+
+### Company — entidade mestre de organizações (`crm.companies`)
+
+`Company` é a entidade central para todos os CNPJs, empresas, escolas, fornecedores, parceiros e entidades jurídicas do sistema. Todos os papéis futuros (Supplier, Partner, School, CorporateCustomer, BillingAccount, ServiceProvider) referenciarão `Company` por `CompanyId` — **nunca duplicar dados de organização em módulos separados**.
+
+```
+Company 1──0..1  Supplier          (FK em Supplier.CompanyId)
+Company 1──0..1  Partner           (FK em Partner.CompanyId)
+Company 1──0..1  School            (FK em School.CompanyId)
+Company 1──0..1  CorporateCustomer (FK em CorporateCustomer.CompanyId)
+Company 1──0..1  BillingAccount    (FK em BillingAccount.CompanyId)
+Company 1──0..1  ServiceProvider   (FK em ServiceProvider.CompanyId)
+```
+
+Enums em `MyCRM.CRM.Domain.Entities`: `CompanyStatus`, `CompanyType`.
+
+Estratégia de deduplicação:
+- `RegistrationNumber` (CNPJ) é único por tenant (partial index, nullable).
+- `Email` é único por tenant (partial index, nullable).
+
+Address é owned value object (mesmo padrão de `Customer`).
 
 ### Customer (`crm.customers`)
 
