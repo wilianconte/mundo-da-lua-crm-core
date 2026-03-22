@@ -14,6 +14,7 @@ public static class DataSeeder
 
         await SeedPeopleAsync(db);
         await SeedCustomersAsync(db);
+        await SeedCompaniesAsync(db);
     }
 
     // ── People ────────────────────────────────────────────────────────────────
@@ -188,6 +189,156 @@ public static class DataSeeder
         };
 
         await db.Customers.AddRangeAsync(customers);
+        await db.SaveChangesAsync();
+    }
+
+    // ── Companies ─────────────────────────────────────────────────────────────
+
+    private static async Task SeedCompaniesAsync(CRMDbContext db)
+    {
+        if (await db.Companies.AnyAsync())
+            return;
+
+        // Covers a realistic mix of future roles:
+        //   schools, suppliers, partners, corporate customers, service providers.
+        // Role-specific entities (School, Supplier, etc.) will reference
+        // these Company records by CompanyId once those modules are implemented.
+        var companies = new[]
+        {
+            // Escola — tenant principal (Mundo da Lua)
+            Company.Create(SeedTenantId,
+                legalName: "Mundo da Lua Educação Ltda",
+                tradeName: "Escola Mundo da Lua",
+                registrationNumber: "12.345.678/0001-90",
+                stateRegistration: "123.456.789.000",
+                municipalRegistration: "98765432",
+                email: "contato@mundodalua.com.br",
+                primaryPhone: "(11) 3456-7890",
+                whatsAppNumber: "(11) 94567-8901",
+                website: "https://www.mundodalua.com.br",
+                contactPersonName: "Diretora Carla Mendes",
+                contactPersonEmail: "carla.mendes@mundodalua.com.br",
+                contactPersonPhone: "(11) 94567-8901",
+                companyType: CompanyType.School,
+                industry: "Educação",
+                notes: "Escola de educação infantil e ensino fundamental — tenant principal"),
+
+            // Fornecedor — material didático
+            Company.Create(SeedTenantId,
+                legalName: "Editora Saber Vivo S.A.",
+                tradeName: "Saber Vivo",
+                registrationNumber: "23.456.789/0001-01",
+                email: "vendas@sabervivo.com.br",
+                primaryPhone: "(11) 2345-6789",
+                whatsAppNumber: "(11) 92345-6789",
+                website: "https://www.sabervivo.com.br",
+                contactPersonName: "Marcos Pinheiro",
+                contactPersonEmail: "marcos.pinheiro@sabervivo.com.br",
+                contactPersonPhone: "(11) 92345-6789",
+                companyType: CompanyType.Supplier,
+                industry: "Editorial / Material Didático",
+                notes: "Fornecedor de livros e materiais pedagógicos"),
+
+            // Fornecedor — alimentação
+            Company.Create(SeedTenantId,
+                legalName: "Nutrição Escolar Distribuidora Ltda",
+                tradeName: "NutriEscola",
+                registrationNumber: "34.567.890/0001-12",
+                email: "pedidos@nutriescola.com.br",
+                primaryPhone: "(11) 3234-5678",
+                companyType: CompanyType.Supplier,
+                industry: "Alimentação",
+                notes: "Fornecedor de merenda e lanches para a cantina"),
+
+            // Parceiro — clínica de saúde mental
+            Company.Create(SeedTenantId,
+                legalName: "Clínica Mente Sã Psicologia Ltda",
+                tradeName: "Mente Sã",
+                registrationNumber: "45.678.901/0001-23",
+                email: "contato@mentesa.com.br",
+                primaryPhone: "(11) 3345-6789",
+                whatsAppNumber: "(11) 93456-7890",
+                website: "https://www.mentesa.com.br",
+                contactPersonName: "Dra. Renata Oliveira",
+                contactPersonEmail: "renata.oliveira@mentesa.com.br",
+                contactPersonPhone: "(11) 93456-7890",
+                companyType: CompanyType.Partner,
+                industry: "Saúde Mental",
+                notes: "Parceira clínica para encaminhamento de alunos — psicologia e fonoaudiologia"),
+
+            // Parceiro — academia de esportes
+            Company.Create(SeedTenantId,
+                legalName: "Sport Kids Academia Infantil Ltda",
+                tradeName: "Sport Kids",
+                registrationNumber: "56.789.012/0001-34",
+                email: "info@sportkids.com.br",
+                primaryPhone: "(11) 4456-7890",
+                whatsAppNumber: "(11) 94567-1234",
+                companyType: CompanyType.Partner,
+                industry: "Esporte e Lazer",
+                notes: "Parceira para atividades extracurriculares esportivas"),
+
+            // Cliente corporativo — empresa conveniada
+            Company.Create(SeedTenantId,
+                legalName: "Tech Solutions Desenvolvimento de Software Ltda",
+                tradeName: "Tech Solutions",
+                registrationNumber: "67.890.123/0001-45",
+                email: "rh@techsolutions.com.br",
+                primaryPhone: "(11) 5567-8901",
+                website: "https://www.techsolutions.com.br",
+                contactPersonName: "Amanda Carvalho",
+                contactPersonEmail: "amanda.carvalho@techsolutions.com.br",
+                contactPersonPhone: "(11) 95678-2345",
+                companyType: CompanyType.CorporateCustomer,
+                industry: "Tecnologia da Informação",
+                notes: "Empresa com funcionários que têm filhos matriculados — convênio corporativo"),
+
+            // Prestador de serviços — manutenção
+            Company.Create(SeedTenantId,
+                legalName: "Conserva Fácil Serviços Gerais ME",
+                tradeName: "Conserva Fácil",
+                registrationNumber: "78.901.234/0001-56",
+                email: "contato@conservafacil.com.br",
+                primaryPhone: "(11) 6678-9012",
+                whatsAppNumber: "(11) 96789-3456",
+                contactPersonName: "João Batista",
+                contactPersonEmail: "joao@conservafacil.com.br",
+                companyType: CompanyType.ServiceProvider,
+                industry: "Manutenção e Conservação",
+                notes: "Prestador de serviços de limpeza e manutenção predial"),
+
+            // Prestador de serviços — TI
+            Company.Create(SeedTenantId,
+                legalName: "Infra Digital Soluções em TI Ltda",
+                tradeName: "Infra Digital",
+                registrationNumber: "89.012.345/0001-67",
+                email: "suporte@infradigital.com.br",
+                primaryPhone: "(11) 7789-0123",
+                whatsAppNumber: "(11) 97890-4567",
+                website: "https://www.infradigital.com.br",
+                contactPersonName: "Ricardo Fonseca",
+                contactPersonEmail: "ricardo.fonseca@infradigital.com.br",
+                contactPersonPhone: "(11) 97890-4567",
+                companyType: CompanyType.ServiceProvider,
+                industry: "Tecnologia da Informação",
+                notes: "Gerencia a infraestrutura de TI, câmeras, rede e sistemas da escola"),
+
+            // Patrocinador — fundação cultural
+            Company.Create(SeedTenantId,
+                legalName: "Fundação Cultural Aprender Juntos",
+                tradeName: "Fundação Aprender",
+                registrationNumber: "90.123.456/0001-78",
+                email: "contato@aprenderjuntos.org.br",
+                primaryPhone: "(11) 8890-1234",
+                website: "https://www.aprenderjuntos.org.br",
+                contactPersonName: "Dra. Sônia Bastos",
+                contactPersonEmail: "sonia.bastos@aprenderjuntos.org.br",
+                companyType: CompanyType.Sponsor,
+                industry: "Terceiro Setor / Educação",
+                notes: "Patrocina bolsas de estudo e projetos culturais na escola"),
+        };
+
+        await db.Companies.AddRangeAsync(companies);
         await db.SaveChangesAsync();
     }
 }
