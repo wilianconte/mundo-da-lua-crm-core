@@ -14,6 +14,7 @@ public static class DataSeeder
 
         await SeedPeopleAsync(db);
         await SeedCustomersAsync(db);
+        await SeedCompaniesAsync(db);
     }
 
     // ── People ────────────────────────────────────────────────────────────────
@@ -188,6 +189,148 @@ public static class DataSeeder
         };
 
         await db.Customers.AddRangeAsync(customers);
+        await db.SaveChangesAsync();
+    }
+
+    // ── Companies ─────────────────────────────────────────────────────────────
+
+    private static async Task SeedCompaniesAsync(CRMDbContext db)
+    {
+        if (await db.Companies.AnyAsync())
+            return;
+
+        // Covers a realistic mix of company types for Mundo da Lua:
+        //   suppliers, partners, schools, corporate customers,
+        //   service providers, sponsors.
+        // Role-specific entities (Supplier, Partner, School, etc.) will reference
+        // these Company records by CompanyId once those modules are implemented.
+        var companies = new[]
+        {
+            // Supplier — livros e material didático
+            Company.Create(SeedTenantId,
+                legalName: "Editora Saber Materiais Didáticos Ltda",
+                tradeName: "Editora Saber",
+                registrationNumber: "12.345.678/0001-01",
+                email: "contato@editorasaber.com.br",
+                primaryPhone: "(11) 3456-7890",
+                whatsAppNumber: "(11) 93456-7890",
+                website: "https://www.editorasaber.com.br",
+                contactPersonName: "Marcos Andrade",
+                contactPersonEmail: "marcos.andrade@editorasaber.com.br",
+                contactPersonPhone: "(11) 98765-4321",
+                companyType: CompanyType.Supplier,
+                industry: "Editorial / Material Didático",
+                notes: "Fornecedor principal de livros e materiais pedagógicos"),
+
+            // Partner — instituto pedagógico parceiro
+            Company.Create(SeedTenantId,
+                legalName: "Instituto Crescer Educação e Desenvolvimento Social",
+                tradeName: "Instituto Crescer",
+                registrationNumber: "23.456.789/0001-02",
+                email: "parceria@institutocrescer.org.br",
+                primaryPhone: "(11) 2345-6789",
+                website: "https://www.institutocrescer.org.br",
+                contactPersonName: "Dra. Sônia Meireles",
+                contactPersonEmail: "sonia.meireles@institutocrescer.org.br",
+                contactPersonPhone: "(11) 97654-3210",
+                companyType: CompanyType.Partner,
+                industry: "Educação / Desenvolvimento Social",
+                notes: "Parceiro pedagógico para programas de contraturno e inclusão"),
+
+            // School — escola parceira para encaminhamento de alunos
+            Company.Create(SeedTenantId,
+                legalName: "Escola Estadual Professor João Bosco",
+                tradeName: "EE João Bosco",
+                registrationNumber: "34.567.890/0001-03",
+                stateRegistration: "ISENTO",
+                email: "secretaria@eejbosc.edu.br",
+                primaryPhone: "(11) 4567-8901",
+                contactPersonName: "Claudia Ferraz",
+                contactPersonEmail: "diretoria@eejbosc.edu.br",
+                contactPersonPhone: "(11) 96543-2109",
+                companyType: CompanyType.School,
+                industry: "Educação Básica",
+                notes: "Escola parceira para encaminhamento de alunos ao contraturno"),
+
+            // CorporateCustomer — empresa que adquire vagas para filhos de funcionários
+            Company.Create(SeedTenantId,
+                legalName: "TechEdu Sistemas e Consultoria Ltda",
+                tradeName: "TechEdu",
+                registrationNumber: "45.678.901/0001-04",
+                email: "rh@techedu.com.br",
+                primaryPhone: "(11) 5678-9012",
+                secondaryPhone: "(11) 5678-9013",
+                website: "https://www.techedu.com.br",
+                contactPersonName: "Renata Borges",
+                contactPersonEmail: "renata.borges@techedu.com.br",
+                contactPersonPhone: "(11) 95432-1098",
+                companyType: CompanyType.CorporateCustomer,
+                industry: "Tecnologia da Informação",
+                notes: "Cliente corporativo — adquire pacotes de vagas para filhos de colaboradores"),
+
+            // ServiceProvider — empresa de limpeza e conservação
+            Company.Create(SeedTenantId,
+                legalName: "Limpeza Total Serviços Gerais ME",
+                tradeName: "Limpeza Total",
+                registrationNumber: "56.789.012/0001-05",
+                email: "contato@limpezatotal.com.br",
+                primaryPhone: "(11) 6789-0123",
+                whatsAppNumber: "(11) 94321-0987",
+                contactPersonName: "José Carlos Pinto",
+                contactPersonEmail: "jose.pinto@limpezatotal.com.br",
+                contactPersonPhone: "(11) 94321-0987",
+                companyType: CompanyType.ServiceProvider,
+                industry: "Serviços de Limpeza e Conservação",
+                notes: "Prestador de serviços de limpeza e conservação das instalações"),
+
+            // Sponsor — patrocinador de eventos e projetos sociais
+            Company.Create(SeedTenantId,
+                legalName: "Banco Comunitário Solidário S.A.",
+                tradeName: "BancoCom",
+                registrationNumber: "67.890.123/0001-06",
+                email: "marketing@bancocom.com.br",
+                primaryPhone: "(11) 7890-1234",
+                website: "https://www.bancocom.com.br",
+                contactPersonName: "Flávia Mendonça",
+                contactPersonEmail: "flavia.mendonca@bancocom.com.br",
+                contactPersonPhone: "(11) 93210-9876",
+                companyType: CompanyType.Sponsor,
+                industry: "Serviços Financeiros",
+                notes: "Patrocinador de eventos anuais e projetos sociais"),
+
+            // ServiceProvider — desenvolvimento de sistemas
+            Company.Create(SeedTenantId,
+                legalName: "SoftHouse Desenvolvimento de Sistemas Ltda",
+                tradeName: "SoftHouse",
+                registrationNumber: "78.901.234/0001-07",
+                email: "suporte@softhouse.dev",
+                primaryPhone: "(11) 8901-2345",
+                whatsAppNumber: "(11) 92109-8765",
+                website: "https://www.softhouse.dev",
+                contactPersonName: "Diego Queiroz",
+                contactPersonEmail: "diego.queiroz@softhouse.dev",
+                contactPersonPhone: "(11) 92109-8765",
+                companyType: CompanyType.ServiceProvider,
+                industry: "Tecnologia — Desenvolvimento de Software",
+                notes: "Fornecedor de sistemas de gestão e suporte técnico"),
+
+            // Supplier — gráfica para material de eventos e campanhas
+            Company.Create(SeedTenantId,
+                legalName: "Gráfica Rápida Impressões ME",
+                tradeName: "Gráfica Rápida",
+                registrationNumber: "89.012.345/0001-08",
+                email: "orcamento@graficarapida.com.br",
+                primaryPhone: "(11) 9012-3456",
+                whatsAppNumber: "(11) 91098-7654",
+                contactPersonName: "Sandra Matos",
+                contactPersonEmail: "sandra@graficarapida.com.br",
+                contactPersonPhone: "(11) 91098-7654",
+                companyType: CompanyType.Supplier,
+                industry: "Gráfica e Comunicação Visual",
+                notes: "Fornecedor de material gráfico para eventos e campanhas"),
+        };
+
+        await db.Companies.AddRangeAsync(companies);
         await db.SaveChangesAsync();
     }
 }
