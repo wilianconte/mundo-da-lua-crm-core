@@ -103,7 +103,7 @@ Shared.Kernel ← todos
 
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
-| `crm` | `CRMDbContext` | `customers`, `people`, `companies` | CRM |
+| `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians` | CRM |
 | `auth` | `AuthDbContext` | `users` | Auth |
 
 Schemas planejados (ainda não implementados):
@@ -156,6 +156,37 @@ Estratégia de deduplicação:
 - `Email` é único por tenant (partial index, nullable).
 
 Address é owned value object (mesmo padrão de `Customer`).
+
+### Student — entidade de papel para alunos (`crm.students`)
+
+`Student` é a extensão de papel de `Person` para o contexto escolar. Não duplica dados pessoais.
+
+```
+Person 1──0..1  Student  (FK em Student.PersonId)
+Student 1──0..* StudentGuardian (FK em StudentGuardian.StudentId)
+```
+
+Campos específicos: `RegistrationNumber`, `SchoolName`, `GradeOrClass`, `EnrollmentType`, `UnitId`, `ClassGroup`, `StartDate`, `Status` (StudentStatus), `Notes`, `AcademicObservation`.
+
+Enums: `StudentStatus` (Active, Inactive, Graduated, Transferred, Suspended).
+
+Restrição de unicidade: `(TenantId, PersonId)` único onde `IsDeleted = false` — uma pessoa não pode ter dois registros de aluno ativos.
+
+### StudentGuardian — entidade de relacionamento aluno↔responsável (`crm.student_guardians`)
+
+Entidade de relacionamento entre `Student` e `Person` (responsável). Armazena atributos do vínculo:
+`RelationshipType` (GuardianRelationshipType), `IsPrimaryGuardian`, `IsFinancialResponsible`, `ReceivesNotifications`, `CanPickupChild`, `Notes`.
+
+```
+StudentGuardian *──1 Student  (FK em StudentGuardian.StudentId, cascade delete)
+StudentGuardian *──1 Person   (FK em StudentGuardian.GuardianPersonId, restrict)
+```
+
+Enums: `GuardianRelationshipType` (Father, Mother, Grandmother, Grandfather, Uncle, Aunt, LegalGuardian, Other).
+
+Restrição de unicidade: `(TenantId, StudentId, GuardianPersonId)` único onde `IsDeleted = false` — o mesmo responsável não pode ser adicionado duas vezes para o mesmo aluno.
+
+**Design decision:** Não foi criada entidade separada `Guardian` — o responsável é representado diretamente por `Person`, seguindo o padrão de papéis via FK.
 
 ### Customer (`crm.customers`)
 
