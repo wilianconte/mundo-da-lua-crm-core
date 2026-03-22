@@ -6,15 +6,32 @@ Você está trabalhando no backend do **MyCRM**. Aplique rigorosamente as regras
 
 ## REGRA OBRIGATÓRIA — ATUALIZAÇÃO DA SKILL
 
-**Ao finalizar qualquer implementação, atualize este arquivo (`core.md`) com os novos conhecimentos adquiridos.**
+**Ao finalizar qualquer implementação, execute obrigatoriamente os dois passos abaixo:**
 
-O que deve ser atualizado:
+### Passo 1 — Atualizar conhecimentos
+
+Atualize este arquivo (`core.md`) com os novos conhecimentos adquiridos:
 - Novos módulos ou projetos adicionados à solução
 - Novas entidades e suas convenções
 - Schemas e tabelas criados no banco
 - Decisões de design que se mostraram corretas ou incorretas
 - Armadilhas encontradas e como foram resolvidas
 - Novos padrões ou convenções estabelecidos
+
+### Passo 2 — Análise de erros e prevenção futura
+
+**Sempre que um erro for corrigido durante ou após uma implementação:**
+
+1. Identifique a causa raiz do erro (não apenas o sintoma)
+2. Avalie se o erro poderia se repetir em situações similares
+3. Formule uma regra preventiva clara e objetiva
+4. Adicione a regra nas seções adequadas deste arquivo:
+   - Checklists → para verificações pontuais
+   - Anti-padrões → para comportamentos a evitar
+   - Padrões existentes → para complementar com novas observações
+   - Nova seção → se o erro revelar uma categoria ainda não coberta
+
+**O objetivo é que cada erro cometido seja cometido uma única vez.**
 
 **Nunca finalize uma tarefa sem verificar se algo novo precisa ser registrado aqui.**
 
@@ -519,6 +536,7 @@ public sealed class {Entidade}Mutations
 - [ ] `{Entidade}Mutations` no GraphQL (create, update, delete)
 - [ ] Inputs e payloads explícitos (`Create{Entidade}Input`, `Update{Entidade}Input`, `{Entidade}Payload`)
 - [ ] Policies de autorização aplicadas (`{modulo}:{recurso}:read` e `{modulo}:{recurso}:write`)
+- [ ] **`{Entidade}Queries` e `{Entidade}Mutations` registrados no `Program.cs` via `.AddTypeExtension<>()`**
 
 ---
 
@@ -671,3 +689,4 @@ curl -s -X POST http://localhost:5095/graphql \
 - criar repositório sem registrá-lo no DI
 - usar snake_case sem aspas duplas em `HasFilter` de índice parcial
 - duplicar dados de identidade pessoal fora de `Person`
+- criar classe `[QueryType]` ou `[MutationType]` sem registrá-la no `Program.cs` via `.AddTypeExtension<>()` — o campo simplesmente não aparece no schema GraphQL e o erro retornado é `"The field X does not exist on the type Query/Mutation"`, não um erro de compilação

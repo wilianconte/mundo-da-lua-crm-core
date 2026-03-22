@@ -52,6 +52,8 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Customers.CustomerMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.People.PersonQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.People.PersonMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyQueries>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.AuthMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
     .AddFiltering()
