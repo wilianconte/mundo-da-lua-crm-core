@@ -19,6 +19,8 @@ public sealed class CRMDbContext : DbContext
     public DbSet<Company>         Companies        => Set<Company>();
     public DbSet<Student>         Students         => Set<Student>();
     public DbSet<StudentGuardian> StudentGuardians => Set<StudentGuardian>();
+    public DbSet<Course>          Courses          => Set<Course>();
+    public DbSet<StudentCourse>   StudentCourses   => Set<StudentCourse>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +40,12 @@ public sealed class CRMDbContext : DbContext
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         modelBuilder.Entity<StudentGuardian>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<Course>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<StudentCourse>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         base.OnModelCreating(modelBuilder);
@@ -70,6 +78,18 @@ public sealed class CRMDbContext : DbContext
         }
 
         foreach (var entry in ChangeTracker.Entries<StudentGuardian>())
+        {
+            if (entry.State == EntityState.Added)
+                entry.Entity.TenantId = _tenant.TenantId;
+        }
+
+        foreach (var entry in ChangeTracker.Entries<Course>())
+        {
+            if (entry.State == EntityState.Added)
+                entry.Entity.TenantId = _tenant.TenantId;
+        }
+
+        foreach (var entry in ChangeTracker.Entries<StudentCourse>())
         {
             if (entry.State == EntityState.Added)
                 entry.Entity.TenantId = _tenant.TenantId;
