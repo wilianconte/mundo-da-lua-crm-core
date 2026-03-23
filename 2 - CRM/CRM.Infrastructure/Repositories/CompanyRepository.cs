@@ -13,6 +13,9 @@ public sealed class CompanyRepository : ICompanyRepository
 
     public IQueryable<Company> Query() => _db.Companies.AsNoTracking();
 
+    public async Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.Companies.AsNoTracking().ToListAsync(ct);
+
     public async Task<Company?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Companies.FirstOrDefaultAsync(x => x.Id == id, ct);
 

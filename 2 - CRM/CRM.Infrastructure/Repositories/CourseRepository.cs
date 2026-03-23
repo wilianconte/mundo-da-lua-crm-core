@@ -13,6 +13,9 @@ public sealed class CourseRepository : ICourseRepository
 
     public IQueryable<Course> Query() => _db.Courses.AsNoTracking();
 
+    public async Task<IReadOnlyList<Course>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.Courses.AsNoTracking().ToListAsync(ct);
+
     public async Task<Course?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Courses.FirstOrDefaultAsync(x => x.Id == id, ct);
 

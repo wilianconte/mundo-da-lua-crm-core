@@ -13,6 +13,9 @@ public sealed class StudentGuardianRepository : IStudentGuardianRepository
 
     public IQueryable<StudentGuardian> Query() => _db.StudentGuardians.AsNoTracking();
 
+    public async Task<IReadOnlyList<StudentGuardian>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.StudentGuardians.AsNoTracking().ToListAsync(ct);
+
     public async Task<StudentGuardian?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.StudentGuardians.FirstOrDefaultAsync(x => x.Id == id, ct);
 

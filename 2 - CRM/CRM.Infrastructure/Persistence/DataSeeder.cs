@@ -15,6 +15,7 @@ public static class DataSeeder
         await SeedPeopleAsync(db);
         await SeedCustomersAsync(db);
         await SeedCompaniesAsync(db);
+        await SeedCoursesAsync(db);
     }
 
     // ── People ────────────────────────────────────────────────────────────────
@@ -340,5 +341,165 @@ public static class DataSeeder
 
         await db.Companies.AddRangeAsync(companies);
         await db.SaveChangesAsync();
+    }
+
+    // ── Courses ───────────────────────────────────────────────────────────────
+
+    private static async Task SeedCoursesAsync(CRMDbContext db)
+    {
+        if (await db.Courses.AnyAsync())
+            return;
+
+        // Covers a realistic mix of course types offered by Mundo da Lua:
+        //   reforço escolar, idiomas, turmas regulares, workshops e oficinas.
+        var courses = new[]
+        {
+            // Reforço Escolar — Fundamental I (1º ao 5º ano)
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Reforço Escolar — Fundamental I",
+                type: CourseType.AfterSchool,
+                code: "REF-FI-2025",
+                description: "Aulas de reforço em Português e Matemática para alunos do 1º ao 5º ano do ensino fundamental.",
+                startDate: new DateOnly(2025, 2, 10),
+                endDate: new DateOnly(2025, 12, 12),
+                scheduleDescription: "Segundas e quartas-feiras, 13h–15h",
+                capacity: 15,
+                workload: 160,
+                notes: "Foco em leitura, escrita e raciocínio lógico")),
+
+            // Reforço Escolar — Fundamental II (6º ao 9º ano)
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Reforço Escolar — Fundamental II",
+                type: CourseType.AfterSchool,
+                code: "REF-FII-2025",
+                description: "Reforço em Matemática, Ciências e Português para alunos do 6º ao 9º ano.",
+                startDate: new DateOnly(2025, 2, 10),
+                endDate: new DateOnly(2025, 12, 12),
+                scheduleDescription: "Terças e quintas-feiras, 14h–16h",
+                capacity: 12,
+                workload: 160,
+                notes: "Preparação para provas bimestrais e SAEB")),
+
+            // Inglês — Nível A1
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Inglês — Nível A1",
+                type: CourseType.Language,
+                code: "ING-A1-2025-1",
+                description: "Curso de inglês para iniciantes. Foco em vocabulário básico, saudações e frases do cotidiano.",
+                startDate: new DateOnly(2025, 3, 3),
+                endDate: new DateOnly(2025, 8, 29),
+                scheduleDescription: "Segundas, quartas e sextas, 10h–11h",
+                capacity: 10,
+                workload: 80,
+                notes: "Material didático incluído na mensalidade")),
+
+            // Inglês — Nível A2
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Inglês — Nível A2",
+                type: CourseType.Language,
+                code: "ING-A2-2025-1",
+                description: "Continuação do nível A1. Gramática básica, presente e passado simples, diálogos do dia a dia.",
+                startDate: new DateOnly(2025, 3, 3),
+                endDate: new DateOnly(2025, 8, 29),
+                scheduleDescription: "Segundas, quartas e sextas, 11h–12h",
+                capacity: 10,
+                workload: 80,
+                notes: "Pré-requisito: aprovação no nível A1 ou teste de nivelamento")),
+
+            // Espanhol Básico — em elaboração
+            Course.Create(SeedTenantId,
+                name: "Espanhol Básico",
+                type: CourseType.Language,
+                code: "ESP-B1-2025",
+                description: "Curso introdutório de espanhol para crianças e adolescentes.",
+                startDate: new DateOnly(2025, 9, 1),
+                endDate: new DateOnly(2026, 2, 27),
+                scheduleDescription: "Terças e quintas-feiras, 10h–11h",
+                capacity: 10,
+                workload: 60,
+                notes: "Aguardando confirmação do professor responsável — em rascunho"),
+
+            // Turma Regular — 3º Ano A (2025)
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Turma 3º Ano A — 2025",
+                type: CourseType.SchoolClass,
+                code: "T3A-2025",
+                description: "Turma regular do 3º ano do ensino fundamental — período matutino.",
+                startDate: new DateOnly(2025, 2, 3),
+                endDate: new DateOnly(2025, 12, 19),
+                scheduleDescription: "Segunda a sexta, 7h–12h",
+                capacity: 25,
+                workload: 800,
+                notes: "Professora titular: Ana Paula Souza")),
+
+            // Turma Regular — 6º Ano A (2025)
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Turma 6º Ano A — 2025",
+                type: CourseType.SchoolClass,
+                code: "T6A-2025",
+                description: "Turma regular do 6º ano do ensino fundamental — período vespertino.",
+                startDate: new DateOnly(2025, 2, 3),
+                endDate: new DateOnly(2025, 12, 19),
+                scheduleDescription: "Segunda a sexta, 13h–18h",
+                capacity: 28,
+                workload: 800)),
+
+            // Workshop de Teatro — já concluído
+            CreateCompleted(Course.Create(SeedTenantId,
+                name: "Workshop de Teatro Infantil",
+                type: CourseType.Workshop,
+                code: "WKS-TEA-2024",
+                description: "Oficina de teatro para crianças de 7 a 12 anos, com apresentação final aberta aos pais.",
+                startDate: new DateOnly(2024, 8, 5),
+                endDate: new DateOnly(2024, 11, 29),
+                scheduleDescription: "Sábados, 9h–11h",
+                capacity: 20,
+                workload: 40,
+                notes: "Apresentação de encerramento realizada em 29/11/2024")),
+
+            // Workshop de Robótica — ativo
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Workshop de Robótica e Programação",
+                type: CourseType.Workshop,
+                code: "WKS-ROB-2025-1",
+                description: "Introdução à robótica e lógica de programação usando kits educacionais. Para alunos de 10 a 15 anos.",
+                startDate: new DateOnly(2025, 4, 7),
+                endDate: new DateOnly(2025, 7, 11),
+                scheduleDescription: "Sextas-feiras, 14h–16h",
+                capacity: 12,
+                workload: 30,
+                notes: "Parceria com empresa de tecnologia educacional")),
+
+            // Oficina de Leitura — ativo
+            CreateActive(Course.Create(SeedTenantId,
+                name: "Oficina de Leitura e Escrita Criativa",
+                type: CourseType.Other,
+                code: "OFI-LEC-2025",
+                description: "Programa extracurricular de incentivo à leitura e desenvolvimento da escrita criativa para alunos de 8 a 14 anos.",
+                startDate: new DateOnly(2025, 3, 10),
+                endDate: new DateOnly(2025, 11, 28),
+                scheduleDescription: "Quintas-feiras, 14h30–16h",
+                capacity: 16,
+                workload: 64,
+                notes: "Acervo de livros disponível na biblioteca da escola")),
+        };
+
+        await db.Courses.AddRangeAsync(courses);
+        await db.SaveChangesAsync();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Course CreateActive(Course course)
+    {
+        course.Publish();
+        return course;
+    }
+
+    private static Course CreateCompleted(Course course)
+    {
+        course.Publish();
+        course.Complete();
+        return course;
     }
 }

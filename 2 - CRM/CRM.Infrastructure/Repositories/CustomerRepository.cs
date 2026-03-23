@@ -13,6 +13,9 @@ public sealed class CustomerRepository : ICustomerRepository
     public CustomerRepository(CRMDbContext db) => _db = db;
 
     public IQueryable<Customer> Query() => _db.Customers.AsNoTracking();
+
+    public async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.Customers.AsNoTracking().ToListAsync(ct);
     public async Task<Customer?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Customers.FirstOrDefaultAsync(x => x.Id == id, ct);
     public async Task AddAsync(Customer entity, CancellationToken ct = default) =>

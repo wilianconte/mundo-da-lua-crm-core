@@ -12,6 +12,9 @@ public sealed class UserRepository : IUserRepository
     public UserRepository(AuthDbContext db) => _db = db;
 
     public IQueryable<User> Query() => _db.Users.AsNoTracking();
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.Users.AsNoTracking().ToListAsync(ct);
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Users.FirstOrDefaultAsync(x => x.Id == id, ct);
     public async Task AddAsync(User entity, CancellationToken ct = default) =>

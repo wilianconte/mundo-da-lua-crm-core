@@ -2,7 +2,6 @@ using MyCRM.CRM.Application.DTOs;
 using MyCRM.CRM.Domain.Repositories;
 using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using MyCRM.Shared.Kernel.Results;
 
 namespace MyCRM.CRM.Application.Queries.GetAllStudentGuardians;
@@ -11,14 +10,11 @@ public sealed class GetAllStudentGuardiansHandler : IRequestHandler<GetAllStuden
 {
     private readonly IStudentGuardianRepository _repository;
 
-    public GetAllStudentGuardiansHandler(IStudentGuardianRepository repository)
-    {
-        _repository = repository;
-    }
+    public GetAllStudentGuardiansHandler(IStudentGuardianRepository repository) => _repository = repository;
 
     public async Task<Result<IReadOnlyList<StudentGuardianDto>>> Handle(GetAllStudentGuardiansQuery request, CancellationToken ct)
     {
-        var guardians = await _repository.Query().ToListAsync(ct);
+        var guardians = await _repository.GetAllAsync(ct);
         return Result<IReadOnlyList<StudentGuardianDto>>.Success(guardians.Adapt<IReadOnlyList<StudentGuardianDto>>());
     }
 }

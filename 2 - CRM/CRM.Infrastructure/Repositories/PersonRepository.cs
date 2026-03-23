@@ -13,6 +13,9 @@ public sealed class PersonRepository : IPersonRepository
 
     public IQueryable<Person> Query() => _db.People.AsNoTracking();
 
+    public async Task<IReadOnlyList<Person>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.People.AsNoTracking().ToListAsync(ct);
+
     public async Task<Person?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.People.FirstOrDefaultAsync(x => x.Id == id, ct);
 

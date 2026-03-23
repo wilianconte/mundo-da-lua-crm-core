@@ -13,6 +13,9 @@ public sealed class StudentRepository : IStudentRepository
 
     public IQueryable<Student> Query() => _db.Students.AsNoTracking();
 
+    public async Task<IReadOnlyList<Student>> GetAllAsync(CancellationToken ct = default) =>
+        await _db.Students.AsNoTracking().ToListAsync(ct);
+
     public async Task<Student?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Students.FirstOrDefaultAsync(x => x.Id == id, ct);
 
