@@ -26,6 +26,8 @@ public static class DependencyInjection
         new CompanyMappingConfig().Register(config);
         new StudentMappingConfig().Register(config);
         new StudentGuardianMappingConfig().Register(config);
+        new CourseMappingConfig().Register(config);
+        new StudentCourseMappingConfig().Register(config);
 
         return services;
     }

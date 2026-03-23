@@ -103,7 +103,7 @@ Shared.Kernel ← todos
 
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
-| `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians` | CRM |
+| `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses` | CRM |
 | `auth` | `AuthDbContext` | `users` | Auth |
 
 Schemas planejados (ainda não implementados):
@@ -187,6 +187,40 @@ Enums: `GuardianRelationshipType` (Father, Mother, Grandmother, Grandfather, Unc
 Restrição de unicidade: `(TenantId, StudentId, GuardianPersonId)` único onde `IsDeleted = false` — o mesmo responsável não pode ser adicionado duas vezes para o mesmo aluno.
 
 **Design decision:** Não foi criada entidade separada `Guardian` — o responsável é representado diretamente por `Person`, seguindo o padrão de papéis via FK.
+
+### Course — entidade mestre de ofertas educacionais (`crm.courses`)
+
+`Course` representa qualquer programa ou oferta educacional estruturada (reforço escolar, inglês, turma, workshop, etc.).
+Mantida genérica para suportar múltiplos contextos de negócio sem criar entidades paralelas.
+
+```
+Course 1──0..* StudentCourse  (FK em StudentCourse.CourseId)
+```
+
+Campos específicos: `Name`, `Code`, `Type` (CourseType), `Description`, `StartDate`, `EndDate`, `ScheduleDescription`, `Capacity`, `Workload`, `UnitId`, `Status` (CourseStatus), `IsActive`, `Notes`.
+
+Enums: `CourseType` (AfterSchool, Language, SchoolClass, Workshop, Other), `CourseStatus` (Draft, Active, Inactive, Completed, Cancelled).
+
+Restrição de unicidade: `(TenantId, Code)` único onde `Code IS NOT NULL`.
+
+**Design decision:** `Course` é a fonte da verdade dos dados de programa. Dados específicos de matrícula (datas, turma, turno) ficam em `StudentCourse`. `IsActive` é um flag de conveniência gerenciado pelos métodos de domínio (`Activate`, `Deactivate`, `Complete`, `Cancel`).
+
+### StudentCourse — entidade de relacionamento aluno↔curso (`crm.student_courses`)
+
+Entidade de associação entre `Student` e `Course`. Armazena todos os atributos específicos da matrícula.
+
+```
+StudentCourse *──1 Student  (FK em StudentCourse.StudentId, restrict)
+StudentCourse *──1 Course   (FK em StudentCourse.CourseId, restrict)
+```
+
+Campos específicos: `EnrollmentDate`, `StartDate`, `EndDate`, `CancellationDate`, `CompletionDate`, `Status` (StudentCourseStatus), `ClassGroup`, `Shift`, `ScheduleDescription`, `UnitId`, `Notes`.
+
+Enums: `StudentCourseStatus` (Active, Pending, Completed, Cancelled, Suspended).
+
+Restrição: re-matrícula histórica é permitida (mesmo aluno no mesmo curso em períodos diferentes). A lógica de negócio impede matrículas ativas/pendentes simultâneas para o mesmo par `(StudentId, CourseId)` dentro do mesmo tenant. O índice `(TenantId, StudentId, CourseId)` com filtro `IsDeleted = false` apoia esse controle.
+
+**Design decision:** Ambas as FKs usam `DeleteBehavior.Restrict` — nem a exclusão de Student nem de Course deve apagar automaticamente o histórico de matrículas.
 
 ### Customer (`crm.customers`)
 
