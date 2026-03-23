@@ -13,5 +13,6 @@ public record CreateCourseInput(
     int? Capacity,
     int? Workload,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    CourseStatus Status = CourseStatus.Draft
 );

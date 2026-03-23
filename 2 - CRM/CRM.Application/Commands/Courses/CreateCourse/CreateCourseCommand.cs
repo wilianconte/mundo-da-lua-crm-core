@@ -16,5 +16,6 @@ public record CreateCourseCommand(
     int? Capacity,
     int? Workload,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    CourseStatus Status = CourseStatus.Draft
 ) : IRequest<Result<CourseDto>>;

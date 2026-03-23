@@ -106,7 +106,8 @@ public sealed class Course : TenantEntity
         int? capacity                = null,
         int? workload                = null,
         Guid? unitId                 = null,
-        string? notes                = null)
+        string? notes                = null,
+        CourseStatus status          = CourseStatus.Draft)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Course name is required.", nameof(name));
@@ -124,8 +125,8 @@ public sealed class Course : TenantEntity
             Capacity            = capacity,
             Workload            = workload,
             UnitId              = unitId,
-            Status              = CourseStatus.Draft,
-            IsActive            = false,
+            Status              = status,
+            IsActive            = status == CourseStatus.Active,
             Notes               = notes?.Trim(),
         };
     }

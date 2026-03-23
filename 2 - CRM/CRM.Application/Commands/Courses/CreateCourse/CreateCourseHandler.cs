@@ -44,7 +44,8 @@ public sealed class CreateCourseHandler : IRequestHandler<CreateCourseCommand, R
             capacity:           request.Capacity,
             workload:           request.Workload,
             unitId:             request.UnitId,
-            notes:              request.Notes);
+            notes:              request.Notes,
+            status:             request.Status);
 
         await _repository.AddAsync(course, ct);
         await _repository.SaveChangesAsync(ct);

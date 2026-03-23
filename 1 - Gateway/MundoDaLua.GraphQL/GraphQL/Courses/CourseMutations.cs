@@ -27,7 +27,8 @@ public sealed class CourseMutations
             input.Capacity,
             input.Workload,
             input.UnitId,
-            input.Notes), ct);
+            input.Notes,
+            input.Status), ct);
 
         return result.IsSuccess
             ? new CoursePayload(result.Value!)
