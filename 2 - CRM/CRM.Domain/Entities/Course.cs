@@ -163,6 +163,13 @@ public sealed class Course : TenantEntity
         Touch();
     }
 
+    public void ChangeStatus(CourseStatus newStatus)
+    {
+        Status   = newStatus;
+        IsActive = newStatus == CourseStatus.Active;
+        Touch();
+    }
+
     public void Activate()
     {
         Status   = CourseStatus.Active;

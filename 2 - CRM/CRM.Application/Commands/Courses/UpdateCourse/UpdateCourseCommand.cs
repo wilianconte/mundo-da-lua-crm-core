@@ -17,5 +17,6 @@ public record UpdateCourseCommand(
     int? Capacity,
     int? Workload,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    CourseStatus? Status = null
 ) : IRequest<Result<CourseDto>>;

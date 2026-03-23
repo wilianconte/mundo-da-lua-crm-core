@@ -13,5 +13,6 @@ public record UpdateCourseInput(
     int? Capacity,
     int? Workload,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    CourseStatus? Status = null
 );

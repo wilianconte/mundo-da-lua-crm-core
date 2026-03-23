@@ -48,6 +48,9 @@ public sealed class UpdateCourseHandler : IRequestHandler<UpdateCourseCommand, R
             unitId:             request.UnitId,
             notes:              request.Notes);
 
+        if (request.Status.HasValue)
+            course.ChangeStatus(request.Status.Value);
+
         _repository.Update(course);
         await _repository.SaveChangesAsync(ct);
 
