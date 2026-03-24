@@ -63,6 +63,8 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Courses.CourseMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentCourses.StudentCourseQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentCourses.StudentCourseMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeQueries>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
     .AddFiltering()
     .AddSorting()

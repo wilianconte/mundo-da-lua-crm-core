@@ -16,6 +16,7 @@ public static class DataSeeder
         await SeedCustomersAsync(db);
         await SeedCompaniesAsync(db);
         await SeedCoursesAsync(db);
+        await SeedEmployeesAsync(db);
     }
 
     // ── People ────────────────────────────────────────────────────────────────
@@ -485,6 +486,71 @@ public static class DataSeeder
         };
 
         await db.Courses.AddRangeAsync(courses);
+        await db.SaveChangesAsync();
+    }
+
+    // ── Employees ─────────────────────────────────────────────────────────────
+
+    private static async Task SeedEmployeesAsync(CRMDbContext db)
+    {
+        if (await db.Employees.AnyAsync())
+            return;
+
+        // Look up the people already seeded that represent employees of Mundo da Lua.
+        // We resolve by email because Person IDs are dynamically generated.
+        var ana     = await db.People.FirstOrDefaultAsync(p => p.Email == "ana.souza@email.com");
+        var pedro   = await db.People.FirstOrDefaultAsync(p => p.Email == "pedro.gomes@email.com");
+        var juliana = await db.People.FirstOrDefaultAsync(p => p.Email == "juliana.rocha@email.com");
+
+        if (ana is null || pedro is null || juliana is null)
+            return; // People seed has not run — skip silently
+
+        var employees = new[]
+        {
+            // Professora titular — Ana Paula Souza
+            Employee.Create(SeedTenantId,
+                personId:     ana.Id,
+                employeeCode: "MDL-001",
+                hireDate:     new DateOnly(2020, 2, 3),
+                position:     "Professora do Ensino Fundamental I",
+                department:   "Pedagogia",
+                contractType: "CLT",
+                workSchedule: "Segunda a sexta, 7h–12h",
+                workloadHours: 30m,
+                payrollNumber: "FLH-001",
+                costCenter:   "CC-PEDAGOGY",
+                notes:        "Professora titular da turma 3º Ano A"),
+
+            // Psicólogo — Pedro Henrique Gomes
+            Employee.Create(SeedTenantId,
+                personId:     pedro.Id,
+                employeeCode: "MDL-002",
+                hireDate:     new DateOnly(2022, 3, 14),
+                position:     "Psicólogo Escolar",
+                department:   "Clínica / Apoio",
+                contractType: "PJ",
+                workSchedule: "Terças e quintas-feiras, 8h–17h",
+                workloadHours: 16m,
+                payrollNumber: "FLH-002",
+                costCenter:   "CC-CLINIC",
+                notes:        "Atende alunos encaminhados pela coordenação pedagógica"),
+
+            // Fonoaudióloga — Juliana Carvalho Rocha
+            Employee.Create(SeedTenantId,
+                personId:     juliana.Id,
+                employeeCode: "MDL-003",
+                hireDate:     new DateOnly(2023, 8, 1),
+                position:     "Fonoaudióloga",
+                department:   "Clínica / Apoio",
+                contractType: "PJ",
+                workSchedule: "Segundas e quartas-feiras, 9h–16h",
+                workloadHours: 14m,
+                payrollNumber: "FLH-003",
+                costCenter:   "CC-CLINIC",
+                notes:        "Especialista em linguagem infantil e dislexia"),
+        };
+
+        await db.Employees.AddRangeAsync(employees);
         await db.SaveChangesAsync();
     }
 
