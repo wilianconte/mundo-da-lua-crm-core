@@ -1,0 +1,145 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mundodalua_crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CONNECTION_STRING: "Host=localhost;Port=5432;Database=mundodalua_crm;Username=postgres;Password=postgres"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://localhost:5095
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install EF Core CLI
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Restore dependencies
+        run: dotnet restore MyCRM.sln
+
+      - name: Build
+        run: dotnet build MyCRM.sln --no-restore --configuration Release
+
+      - name: Apply migrations
+        run: |
+          dotnet ef database update \
+            --project "2 - CRM/CRM.Infrastructure" \
+            --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+            --context CRMDbContext
+        env:
+          ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
+
+      - name: Start application
+        run: |
+          dotnet run \
+            --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj" \
+            --configuration Release \
+            --no-build &
+          echo "Aguardando aplicação iniciar..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5095/graphql \
+              -H "Content-Type: application/json" \
+              -d '{"query":"{ __typename }"}' > /dev/null 2>&1; then
+              echo "Aplicação pronta."
+              break
+            fi
+            sleep 2
+          done
+        env:
+          ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
+          Jwt__Secret: ${{ secrets.JWT_SECRET }}
+          Jwt__Issuer: mundodalua
+          Jwt__Audience: mundodalua
+
+      - name: Extract PR test plan
+        id: testplan
+        run: |
+          BODY=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body')
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude Code validation
+        id: claude
+        run: |
+          claude --dangerously-skip-permissions --print "
+          Você é um agente de validação de PR rodando em CI.
+
+          ## Contexto da aplicação
+          - Backend GraphQL rodando em http://localhost:5095/graphql
+          - Credenciais de seed: tenantId=00000000-0000-0000-0000-000000000001, email=admin@mundodalua.com, senha=Admin@123
+          - Para autenticar: POST /graphql com mutation { login(input: { tenantId: \"...\", email: \"...\", password: \"...\" }) { token } }
+          - Usar o token retornado no header Authorization: Bearer <token>
+
+          ## Test plan do PR
+          ${{ steps.testplan.outputs.body }}
+
+          ## Sua tarefa
+          1. Obtenha o JWT token via mutation de login
+          2. Execute cada item do test plan que seja testável via HTTP (queries e mutations GraphQL)
+          3. Para cada item: execute o teste, registre se passou ou falhou e o motivo
+          4. Ao final, gere um relatório markdown com:
+             - Lista de cada item testado com status ✅ ou ❌
+             - Detalhes de falhas (se houver)
+             - Conclusão geral: APROVADO ou REPROVADO
+
+          Use curl para as requisições HTTP. Seja objetivo e preciso.
+          " > claude_report.md 2>&1
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Post validation report as PR comment
+        if: always()
+        run: |
+          REPORT=$(cat claude_report.md)
+          gh pr comment ${{ github.event.pull_request.number }} --body "## Relatório de Validação — Claude Code
+
+          $REPORT
+
+          ---
+          _Gerado automaticamente por [Claude Code](https://claude.com/claude-code) · workflow \`pr-validation\`_"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if validation failed
+        run: |
+          if grep -q "REPROVADO" claude_report.md; then
+            echo "Validação falhou. Veja o comentário no PR."
+            exit 1
+          fi
