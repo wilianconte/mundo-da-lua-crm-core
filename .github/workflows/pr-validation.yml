@@ -57,6 +57,11 @@ jobs:
             --project "2 - CRM/CRM.Infrastructure" \
             --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
             --context CRMDbContext
+
+          dotnet ef database update \
+            --project "3 - Auth/Auth.Infrastructure" \
+            --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+            --context AuthDbContext
         env:
           ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
 
