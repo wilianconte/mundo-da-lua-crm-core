@@ -45,9 +45,6 @@ jobs:
       - name: Install EF Core CLI
         run: dotnet tool install --global dotnet-ef
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
-
       - name: Restore dependencies
         run: dotnet restore MyCRM.sln
 
@@ -63,12 +60,13 @@ jobs:
         env:
           ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
 
-      - name: Start application
+      - name: Start application and verify GraphQL
         run: |
           dotnet run \
             --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj" \
             --configuration Release \
             --no-build &
+
           echo "Aguardando aplicação iniciar..."
           for i in $(seq 1 30); do
             if curl -sf http://localhost:5095/graphql \
@@ -79,71 +77,46 @@ jobs:
             fi
             sleep 2
           done
+
+          echo "Verificando login..."
+          TOKEN=$(curl -s -X POST http://localhost:5095/graphql \
+            -H "Content-Type: application/json" \
+            -d '{"query":"mutation { login(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", email: \"admin@mundodalua.com\", password: \"Admin@123\" }) { token } }"}' \
+            | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+          if [ -z "$TOKEN" ]; then
+            echo "ERRO: Falha ao obter token de autenticação"
+            exit 1
+          fi
+          echo "Login OK."
+
+          echo "Verificando schema GraphQL..."
+          SCHEMA=$(curl -s -X POST http://localhost:5095/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $TOKEN" \
+            -d '{"query":"{ __schema { queryType { fields { name } } mutationType { fields { name } } } }"}')
+
+          for FIELD in employees employeeById; do
+            if echo "$SCHEMA" | grep -q "\"name\":\"$FIELD\""; then
+              echo "Query '$FIELD': OK"
+            else
+              echo "ERRO: Query '$FIELD' não encontrada no schema"
+              exit 1
+            fi
+          done
+
+          for FIELD in createEmployee updateEmployee deleteEmployee; do
+            if echo "$SCHEMA" | grep -q "\"name\":\"$FIELD\""; then
+              echo "Mutation '$FIELD': OK"
+            else
+              echo "ERRO: Mutation '$FIELD' não encontrada no schema"
+              exit 1
+            fi
+          done
+
+          echo "Todas as verificações passaram."
         env:
           ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
           Jwt__Secret: ${{ secrets.JWT_SECRET }}
           Jwt__Issuer: mundodalua
           Jwt__Audience: mundodalua
-
-      - name: Prepare Claude prompt
-        # O corpo do PR é passado via env var (não expandido pelo shell) para evitar
-        # que backticks do markdown sejam interpretados como comandos bash.
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          cat > /tmp/claude_prompt.txt << 'STATIC_EOF'
-          Você é um agente de validação de PR rodando em CI.
-
-          ## Contexto da aplicação
-          - Backend GraphQL rodando em http://localhost:5095/graphql
-          - Credenciais de seed: tenantId=00000000-0000-0000-0000-000000000001, email=admin@mundodalua.com, senha=Admin@123
-          - Para autenticar: POST /graphql com a mutation abaixo:
-            {"query":"mutation { login(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", email: \"admin@mundodalua.com\", password: \"Admin@123\" }) { token } }"}
-          - Usar o token retornado no header: Authorization: Bearer TOKEN
-
-          ## Test plan do PR
-          STATIC_EOF
-
-          printf '%s\n' "$PR_BODY" >> /tmp/claude_prompt.txt
-
-          cat >> /tmp/claude_prompt.txt << 'STATIC_EOF'
-
-          ## Sua tarefa
-          1. Obtenha o JWT token via mutation de login usando curl
-          2. Execute cada item do test plan que seja testável via HTTP (queries e mutations GraphQL)
-          3. Para cada item: execute o teste com curl, registre se passou ou falhou e o motivo
-          4. Ao final, gere um relatorio markdown com:
-             - Lista de cada item testado com status PASSOU ou FALHOU
-             - Detalhes de falhas (se houver)
-             - Conclusao geral: APROVADO ou REPROVADO
-
-          Use curl para as requisicoes HTTP. Seja objetivo e preciso.
-          STATIC_EOF
-
-      - name: Run Claude Code validation
-        id: claude
-        continue-on-error: true
-        run: |
-          claude --dangerously-skip-permissions --print "$(cat /tmp/claude_prompt.txt)" > claude_report.md 2>&1
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-      - name: Post validation report as PR comment
-        if: always()
-        run: |
-          REPORT=$(cat claude_report.md)
-          gh pr comment ${{ github.event.pull_request.number }} --body "## Relatório de Validação — Claude Code
-
-          $REPORT
-
-          ---
-          _Gerado automaticamente por [Claude Code](https://claude.com/claude-code) · workflow \`pr-validation\`_"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fail if validation failed
-        run: |
-          if grep -q "REPROVADO" claude_report.md; then
-            echo "Validação falhou. Veja o comentário no PR."
-            exit 1
-          fi
