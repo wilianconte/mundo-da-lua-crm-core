@@ -102,6 +102,28 @@ Atualize os arquivos desta skill com os novos conhecimentos adquiridos:
 
 ---
 
+## REGISTRO NO PROGRAM.CS (ao adicionar nova entidade)
+
+Ao criar `{Entidade}Queries` e `{Entidade}Mutations`, registrar em `Program.cs`:
+
+```csharp
+builder.Services
+    .AddGraphQLServer()
+    // ... (existentes)
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.{Modulo}.{Entidade}Queries>()   // ← adicionar
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.{Modulo}.{Entidade}Mutations>() // ← adicionar
+    // Opcional: apenas se precisar ocultar campos internos da entidade
+    .AddType<MyCRM.GraphQL.GraphQL.{Modulo}.{Entidade}ObjectType>()
+```
+
+Também registrar os módulos Application e Infrastructure:
+```csharp
+builder.Services.Add{Modulo}Application();
+builder.Services.Add{Modulo}Infrastructure(builder.Configuration);
+```
+
+---
+
 ## DECISÕES NÃO NEGOCIÁVEIS
 
 | Tema | Decisão |

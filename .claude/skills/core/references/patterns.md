@@ -3,19 +3,25 @@
 ## FLUXO DE ESCRITA (obrigatório)
 
 ```
-GraphQL Mutation → Input → MediatR Command → FluentValidation
-  → Handler → Aggregate/Domain Rules → UoW/Transaction
-  → Domain Events → Outbox → Payload de retorno
+GraphQL Mutation → CreateXxxInput → CreateXxxCommand (MediatR)
+  → ValidationBehavior (FluentValidation automático)
+  → Handler: validações de negócio via repositório
+  → Domain factory method (Xxx.Create(...))
+  → repository.AddAsync() + repository.SaveChangesAsync()
+  → Result<XxxDto>.Success(entity.Adapt<XxxDto>())
+  → Mutation converte Result em payload ou lança GraphQLException
 ```
+
+> Domain Events e Outbox **não estão implementados**. O flow é direto: handler → repositório → SaveChanges → Result.
 
 **Nunca** coloque regra de negócio no resolver GraphQL.
 
 ## FLUXO DE LEITURA (obrigatório)
 
 ```
-GraphQL Query → Authorization → Query Handler
-  → EF Core projection (AsNoTracking) ou Dapper se justificado
-  → DTO/Read Model → resultado
+GraphQL Query → verificação de autenticação
+  → db.Xxx.AsNoTracking() com [UsePaging][UseProjection][UseFiltering][UseSorting]
+  → Hot Chocolate projeta automaticamente para o tipo solicitado
 ```
 
 ---
@@ -145,6 +151,52 @@ public static IServiceCollection AddCustomersInfrastructure(
 ```
 
 Ao criar um novo repositório, **sempre** registrá-lo no `DependencyInjection.cs` do módulo.
+
+---
+
+## PADRÃO DE REPOSITÓRIO
+
+### Interface base (`Shared.Kernel`)
+
+```csharp
+// MyCRM.Shared.Kernel.Repositories.IRepository<TEntity>
+public interface IRepository<TEntity> where TEntity : BaseEntity
+{
+    IQueryable<TEntity> Query();
+    Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken ct = default);
+    Task<TEntity?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task AddAsync(TEntity entity, CancellationToken ct = default);
+    void Update(TEntity entity);
+    void Delete(TEntity entity);
+    Task<int> SaveChangesAsync(CancellationToken ct = default);
+}
+```
+
+### Interface especializada (Domain)
+
+Cada repositório de domínio estende `IRepository<T>` com métodos específicos de negócio:
+
+```csharp
+// MyCRM.CRM.Domain.Repositories.IPersonRepository
+public interface IPersonRepository : IRepository<Person>
+{
+    Task<bool> DocumentNumberExistsAsync(Guid tenantId, string documentNumber, Guid? excludeId = null, CancellationToken ct = default);
+    Task<bool> EmailExistsAsync(Guid tenantId, string email, Guid? excludeId = null, CancellationToken ct = default);
+}
+
+// MyCRM.CRM.Domain.Repositories.IEmployeeRepository
+public interface IEmployeeRepository : IRepository<Employee>
+{
+    Task<bool> PersonAlreadyEmployedAsync(Guid tenantId, Guid personId, CancellationToken ct = default);
+    Task<bool> EmployeeCodeExistsAsync(Guid tenantId, string code, CancellationToken ct = default);
+}
+```
+
+Regras:
+- Interface de domínio fica em `{Modulo}.Domain` — não referencia EF Core
+- Implementação concreta fica em `{Modulo}.Infrastructure`
+- Registro no `DependencyInjection.cs` do módulo Infrastructure
+- **Sem Unit of Work explícita** — transação é implícita via `SaveChangesAsync()` do EF Core; operações simples não precisam de transação explícita
 
 ---
 
@@ -304,14 +356,154 @@ Regras:
 
 ## RESULT PATTERN
 
+**Localização:** `Shared.Kernel/Results/Result.cs`
+
 ```csharp
-Result<T>.Success(value)
-Result<T>.Failure("CODIGO_ERRO", "mensagem")
-Result.Success()
-Result.Failure("CODIGO_ERRO", "mensagem")
+// Result<T> — para commands que retornam dados
+public class Result<T>
+{
+    public bool IsSuccess { get; }
+    public T? Value { get; }
+    public string? ErrorCode { get; }
+    public IReadOnlyList<string> Errors { get; }
+
+    public static Result<T> Success(T value) => new(value);
+    public static Result<T> Failure(string errorCode, params string[] errors) => new(errorCode, errors);
+}
+
+// Result — para commands que não retornam dados (delete, etc.)
+public class Result
+{
+    public bool IsSuccess { get; }
+    public string? ErrorCode { get; }
+    public IReadOnlyList<string> Errors { get; }
+
+    public static Result Success() => new(true);
+    public static Result Failure(string errorCode, params string[] errors) => new(false, errorCode, errors);
+}
+```
+
+Uso no handler:
+```csharp
+// Retorno de sucesso
+return Result<PersonDto>.Success(person.Adapt<PersonDto>());
+
+// Retorno de falha de negócio
+return Result<PersonDto>.Failure("PERSON_EMAIL_DUPLICATE", "A person with this email already exists.");
 
 // Erro de validação vem do ValidationBehavior automaticamente — código: "VALIDATION_ERROR"
 ```
+
+---
+
+## PIPELINE BEHAVIOR — ValidationBehavior
+
+O `ValidationBehavior<TRequest, TResponse>` está em `Shared.Kernel` e intercepta todos os commands antes do handler. Não há nada a implementar por command — basta criar o Validator e ele será chamado automaticamente.
+
+**Registro (obrigatório em cada módulo Application):**
+```csharp
+// {Modulo}.Application/DependencyInjection.cs
+services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));  // ← obrigatório
+});
+services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+```
+
+Comportamento:
+- Se houver validators registrados e algum falhar → retorna `Result.Failure("VALIDATION_ERROR", string[])` sem chamar o handler
+- Se não houver validator → passa direto para o handler
+- Funciona para qualquer `IRequest<Result<T>>` ou `IRequest<Result>`
+
+---
+
+## DOMAIN EVENTS
+
+> **Status: não implementado.** O write flow menciona Domain Events e Outbox, mas nenhum mecanismo foi implementado ainda no codebase. Não crie `INotification`, `IDomainEvent` ou outbox sem alinhamento explícito com o projeto.
+
+---
+
+## DATALOADER (N+1)
+
+> **Status: não implementado.** O padrão é reconhecido como necessário para evitar N+1 em queries relacionadas no GraphQL, mas nenhum DataLoader existe no codebase. Queries atualmente fazem projeção direta via EF Core. Não crie DataLoaders sem alinhamento explícito.
+
+---
+
+## PADRÃO GRAPHQL — ERRO DE MUTAÇÃO
+
+Toda mutation converte `Result` em payload ou lança `GraphQLException`:
+
+```csharp
+var result = await sender.Send(new CreatePersonCommand(...), ct);
+
+return result.IsSuccess
+    ? result.Value!
+    : throw new GraphQLException(
+        result.Errors.Select(e =>
+            ErrorBuilder.New()
+                .SetMessage(e)
+                .SetExtension("code", result.ErrorCode)
+                .Build()));
+```
+
+A resposta de erro terá o campo `extensions.code` com o `ErrorCode` do Result (ex: `"PERSON_EMAIL_DUPLICATE"`, `"VALIDATION_ERROR"`).
+
+---
+
+## PADRÃO GRAPHQL — OBJECTTYPE (campos internos ocultos)
+
+Por padrão, Hot Chocolate expõe todos os campos públicos de uma entidade. Para ocultar campos internos (`TenantId`, `IsDeleted`, `DeletedAt`) use `ObjectType<T>` explícito:
+
+```csharp
+public sealed class CustomerObjectType : ObjectType<Customer>
+{
+    protected override void Configure(IObjectTypeDescriptor<Customer> descriptor)
+    {
+        descriptor.Name("Customer");
+        descriptor.Field(x => x.Id);
+        descriptor.Field(x => x.Name);
+        // ... campos expostos
+        descriptor.Ignore(x => x.TenantId);    // ← nunca expor ao cliente
+        descriptor.Ignore(x => x.IsDeleted);
+        descriptor.Ignore(x => x.DeletedAt);
+    }
+}
+```
+
+Registrar em Program.cs com `.AddType<CustomerObjectType>()` (não `.AddTypeExtension<>()`).
+
+Alternativa para entidades simples: usar `[GraphQLIgnore]` no campo da entidade.
+
+---
+
+## MULTI-TENANCY — ITenantService
+
+**Interface:** `Shared.Kernel/MultiTenancy/ITenantService.cs`
+```csharp
+public interface ITenantService
+{
+    Guid TenantId { get; }
+    void SetTenant(Guid tenantId);
+}
+```
+
+**Implementação em produção:** `HttpTenantService` (Gateway) — resolução dual:
+1. Requests HTTP autenticadas: lê claim `tenant_id` do JWT
+2. Fallback para seed/background (sem HTTP context): usa `SetTenant(guid)` chamado explicitamente
+
+**TenantMiddleware** (`Middleware/TenantMiddleware.cs`) extrai o claim do JWT e chama `tenantService.SetTenant()` antes de cada request.
+
+**DI Registration:**
+```csharp
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantService, HttpTenantService>();
+```
+
+Regras:
+- **Nunca** leia `HttpContext` diretamente fora do middleware de tenant
+- Seed usa `tenantService.SetTenant(SeedTenantId)` antes de qualquer operação
+- Handlers recebem `ITenantService` via construtor (injeção padrão)
 
 ---
 
@@ -322,6 +514,18 @@ Modelo de permissão:
 {modulo}:{recurso}:{operacao}
 ```
 Exemplos: `crm:person:read`, `crm:person:write`, `escola:aluno:read`, `clinica:agenda:write`
+
+**Padrão atual nos resolvers:** verificação inline via `IHttpContextAccessor`:
+```csharp
+if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
+    throw new GraphQLException(
+        ErrorBuilder.New()
+            .SetMessage("Não autorizado. Faça login para continuar.")
+            .SetCode("AUTH_NOT_AUTHORIZED")
+            .Build());
+```
+
+> Nota: O atributo `[Authorize(Policy = "...")]` está documentado como padrão ideal mas o codebase atual usa verificação inline. Ao criar novos resolvers, siga o padrão já existente no módulo.
 
 ---
 

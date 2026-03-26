@@ -29,6 +29,8 @@ Inspecionar o arquivo `.cs` gerado antes de aplicar. Se contiver alterações n�
 
 ## COMANDOS EF CLI (sempre com --startup-project)
 
+### Módulo CRM (`CRMDbContext` — schema `crm`)
+
 ```bash
 # Criar migration
 dotnet ef migrations add <Nome> \
@@ -62,6 +64,43 @@ dotnet ef migrations script \
   --context CRMDbContext \
   --idempotent \
   --output migrations-crm.sql
+```
+
+### Módulo Auth (`AuthDbContext` — schema `auth`)
+
+```bash
+# Criar migration
+dotnet ef migrations add <Nome> \
+  --project         "3 - Auth/Auth.Infrastructure" \
+  --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+  --context AuthDbContext \
+  --output-dir Migrations
+
+# Aplicar
+dotnet ef database update \
+  --project         "3 - Auth/Auth.Infrastructure" \
+  --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+  --context AuthDbContext
+
+# Reverter
+dotnet ef database update <NomeMigrationAnterior> \
+  --project         "3 - Auth/Auth.Infrastructure" \
+  --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+  --context AuthDbContext
+
+# Remover última migration (não aplicada)
+dotnet ef migrations remove \
+  --project         "3 - Auth/Auth.Infrastructure" \
+  --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+  --context AuthDbContext
+
+# Gerar script SQL idempotente (produção)
+dotnet ef migrations script \
+  --project         "3 - Auth/Auth.Infrastructure" \
+  --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
+  --context AuthDbContext \
+  --idempotent \
+  --output migrations-auth.sql
 ```
 
 **Nomear a migration de forma descritiva:** `AddCourseEntity`, `AddWorkloadToCourse`, `AddStudentGuardianRelationship`, etc.
@@ -135,7 +174,7 @@ Regras:
 | 2 | `SeedCustomersAsync` | `Customer` | ✅ implementado |
 | 3 | `SeedCompaniesAsync` | `Company` | ✅ implementado |
 | 4 | `SeedCoursesAsync` | `Course` | ✅ implementado |
-| 5 | `SeedEmployeesAsync` | `Employee` | ⏳ pendente |
+| 5 | `SeedEmployeesAsync` | `Employee` | ✅ implementado |
 
 ### Dados de seed de Courses
 

@@ -10,7 +10,8 @@
       "Bash(dotnet tool:*)",
       "Bash($env:PATH = \"$env:USERPROFILE\\\\.dotnet\\\\tools;$env:PATH\")",
       "Bash(export PATH=\"$HOME/.dotnet/tools:$PATH\")",
-      "Bash(powershell -Command \":*)"
+      "Bash(powershell -Command \":*)",
+      "Bash(grep -r [Authorize 'D:\\\\Dev\\\\Mundo da Lua\\\\mundo-da-lua-crm\\\\mundo-da-lua-crm-core' --include=*.cs)"
     ]
   }
 }

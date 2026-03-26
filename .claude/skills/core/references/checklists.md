@@ -2,6 +2,7 @@
 
 ## CHECKLIST ANTES DE INICIAR
 
+- [ ] **Branch criada?** (`git checkout -b claude/<descricao>`)
 - [ ] Qual módulo/domínio?
 - [ ] A entidade pertence a um módulo existente ou precisa de módulo novo?
 - [ ] Qual caso de uso?
@@ -69,4 +70,4 @@ Toda nova entidade deve ter todos os artefatos abaixo antes de ser considerada c
 | `Student` | ✅ | ✅ | ✅ | ✅ |
 | `StudentGuardian` | ✅ | ✅ | ✅ | ✅ |
 | `StudentCourse` | ✅ | ✅ | ✅ | ✅ |
-| `Employee` | ✅ | ✅ | ✅ | ⏳ seed pendente |
+| `Employee` | ✅ | ✅ | ✅ | ✅ |
