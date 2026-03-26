@@ -1,6 +1,46 @@
-# Skill: Arquitetura Core — MyCRM
+﻿# Skill: Arquitetura Core — MyCRM
 
 Você está trabalhando no backend do **MyCRM**. Aplique rigorosamente as regras abaixo em toda decisão de código.
+
+---
+
+## REGRA OBRIGATÓRIA — BRANCH E PULL REQUEST
+
+**Ao iniciar qualquer implementação, crie uma branch `claude/*` antes de escrever qualquer código:**
+
+```bash
+git checkout -b claude/<descricao-curta-da-feature>
+# Exemplos:
+# claude/add-employee-entity
+# claude/add-student-course-enrollment
+# claude/fix-tenant-filter-bug
+```
+
+**Ao finalizar a implementação, crie um Pull Request para `main`:**
+
+```bash
+git add <arquivos-relevantes>
+git commit -m "feat(...): descrição da implementação"
+gh pr create --title "titulo curto" --body "$(cat <<'EOF'
+## Summary
+- bullet 1
+- bullet 2
+
+## Test plan
+- [ ] Aplicação sobe sem erros
+- [ ] Migration aplicada com sucesso
+- [ ] Queries/mutations disponíveis no schema GraphQL
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+Regras:
+- Nunca commitar diretamente em `main`
+- Nome da branch deve descrever a feature/fix em inglês, no formato `claude/<descricao>`
+- O PR deve ser criado antes de encerrar a tarefa — sem precisar que o usuário peça
+- O link do PR deve ser reportado ao usuário ao final
 
 ---
 
@@ -103,7 +143,7 @@ Shared.Kernel ← todos
 
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
-| `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses` | CRM |
+| `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses`, `employees` | CRM |
 | `auth` | `AuthDbContext` | `users` | Auth |
 
 Schemas planejados (ainda não implementados):
@@ -222,6 +262,25 @@ Restrição: re-matrícula histórica é permitida (mesmo aluno no mesmo curso e
 
 **Design decision:** Ambas as FKs usam `DeleteBehavior.Restrict` — nem a exclusão de Student nem de Course deve apagar automaticamente o histórico de matrículas.
 
+
+### Employee — entidade de papel para funcionários (`crm.employees`)
+
+`Employee` é a extensão de papel de `Person` para o contexto de RH/emprego. Não duplica dados pessoais.
+
+```
+Person 1──0..1  Employee  (FK em Employee.PersonId)
+Employee 0..1──0..* Employee  (auto-referência em Employee.ManagerEmployeeId)
+```
+
+Campos específicos: `EmployeeCode`, `HireDate`, `TerminationDate`, `Position`, `Department`, `ContractType`, `WorkSchedule`, `WorkloadHours`, `PayrollNumber`, `ManagerEmployeeId`, `UnitId`, `CostCenter`, `Status` (EmployeeStatus), `IsActive`, `Notes`.
+
+Enums: `EmployeeStatus` (Active, Inactive, OnLeave, Suspended, Terminated).
+
+Restrições de unicidade:
+- `(TenantId, PersonId)` único onde `IsDeleted = false` — uma pessoa não pode ter dois registros de funcionário ativos.
+- `(TenantId, EmployeeCode)` único onde `EmployeeCode IS NOT NULL`.
+
+**Design decision:** `ManagerEmployeeId` é auto-referência para `Employee` (FK Restrict, nullable). `IsActive` é flag de conveniência sincronizado pelos métodos de domínio (`Activate`, `Deactivate`, `PutOnLeave`, `Suspend`, `Terminate`). A FK para `Person` usa `DeleteBehavior.Restrict`.
 ### Customer (`crm.customers`)
 
 Entidade legada de CRM genérico. Futuramente será refatorada para referenciar `Person`.
@@ -480,6 +539,7 @@ Regras:
 | 2 | `SeedCustomersAsync` | `Customer` | ✅ implementado |
 | 3 | `SeedCompaniesAsync` | `Company` | ✅ implementado |
 | 4 | `SeedCoursesAsync` | `Course` | ✅ implementado |
+| 5 | `SeedEmployeesAsync` | `Employee` | ⏳ pendente |
 
 ### Dados de seed de Courses
 
