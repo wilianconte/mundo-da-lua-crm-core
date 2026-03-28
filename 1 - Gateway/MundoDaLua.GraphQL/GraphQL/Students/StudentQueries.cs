@@ -1,10 +1,5 @@
-using HotChocolate;
-using HotChocolate.Types;
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using HotChocolate.Authorization;
 
 namespace MyCRM.GraphQL.GraphQL.Students;
 
@@ -29,11 +24,12 @@ public sealed class StudentQueries
         return db.Students.AsNoTracking();
     }
 
-    public async Task<Student?> GetStudentByIdAsync(
+    [UseFirstOrDefault]
+    [UseProjection]
+    public IQueryable<Student> GetStudentById(
         Guid id,
         [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor,
-        CancellationToken ct)
+        [Service] IHttpContextAccessor httpContextAccessor)
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
             throw new GraphQLException(
@@ -42,6 +38,6 @@ public sealed class StudentQueries
                     .SetCode("AUTH_NOT_AUTHORIZED")
                     .Build());
 
-        return await db.Students.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        return db.Students.AsNoTracking().Where(x => x.Id == id);
     }
 }

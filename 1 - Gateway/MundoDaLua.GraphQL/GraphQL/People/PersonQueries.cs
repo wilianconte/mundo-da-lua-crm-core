@@ -1,6 +1,5 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.People;
 
@@ -25,11 +24,12 @@ public sealed class PersonQueries
         return db.People.AsNoTracking();
     }
 
-    public async Task<Person?> GetPersonByIdAsync(
+    [UseFirstOrDefault]
+    [UseProjection]
+    public IQueryable<Person> GetPersonById(
         Guid id,
         [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor,
-        CancellationToken ct)
+        [Service] IHttpContextAccessor httpContextAccessor)
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
             throw new GraphQLException(
@@ -38,6 +38,6 @@ public sealed class PersonQueries
                     .SetCode("AUTH_NOT_AUTHORIZED")
                     .Build());
 
-        return await db.People.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        return db.People.AsNoTracking().Where(x => x.Id == id);
     }
 }
