@@ -9,10 +9,15 @@ using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.Shared.Kernel.MultiTenancy;
+using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) =>
+    cfg.ReadFrom.Configuration(ctx.Configuration)
+       .Enrich.FromLogContext());
 
 // CORS
 var allowedOrigins = builder.Configuration
@@ -123,6 +128,7 @@ var app = builder.Build();
 await app.MigrateAllDbContextsAsync();
 
 app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();

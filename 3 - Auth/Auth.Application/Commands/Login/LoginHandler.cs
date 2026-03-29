@@ -56,6 +56,10 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginDto
 
         _tracker.ResetFailures(lockoutKey);
         var (token, expiresAt) = _tokenGen.Generate(user);
+
+        _logger.LogInformation("Audit: login bem-sucedido. TenantId={TenantId} UserId={UserId}",
+            request.TenantId, user.Id);
+
         return Result<LoginDto>.Success(new LoginDto(token, expiresAt, user.Id, user.Name, user.Email));
     }
 }
