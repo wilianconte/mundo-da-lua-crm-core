@@ -57,49 +57,7 @@ public sealed class CRMDbContext : DbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var entry in ChangeTracker.Entries<Customer>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<Person>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<Company>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<Student>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<StudentGuardian>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<Course>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<StudentCourse>())
-        {
-            if (entry.State == EntityState.Added)
-                entry.Entity.TenantId = _tenant.TenantId;
-        }
-
-        foreach (var entry in ChangeTracker.Entries<Employee>())
+        foreach (var entry in ChangeTracker.Entries<IHasTenantId>())
         {
             if (entry.State == EntityState.Added)
                 entry.Entity.TenantId = _tenant.TenantId;
