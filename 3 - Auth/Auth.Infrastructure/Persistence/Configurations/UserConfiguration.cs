@@ -19,7 +19,14 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.IsDeleted).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).IsRequired();
 
+        builder.Property(x => x.PersonId);
+
         builder.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
         builder.HasIndex(x => x.IsDeleted);
+
+        // Uma Person pode estar vinculada a no máximo um User por tenant
+        builder.HasIndex(x => new { x.TenantId, x.PersonId })
+            .IsUnique()
+            .HasFilter("\"PersonId\" IS NOT NULL");
     }
 }
