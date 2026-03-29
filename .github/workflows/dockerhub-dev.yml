@@ -84,8 +84,7 @@ jobs:
       - name: Capturar imagem com SHA
         id: image
         run: |
-          SHA_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "dev-" | head -1)
-          echo "value=$SHA_TAG" >> $GITHUB_OUTPUT
+          echo "value=${{ secrets.DOCKERHUB_USERNAME }}/mundo-da-lua-crm-core:dev-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
 
   rollout:
     name: Rollout
