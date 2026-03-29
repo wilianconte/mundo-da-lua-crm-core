@@ -11,6 +11,7 @@ using MyCRM.Shared.Kernel.Results;
 
 namespace MyCRM.GraphQL.GraphQL.Customers;
 
+[Authorize]
 [MutationType]
 public class CustomerMutations
 {

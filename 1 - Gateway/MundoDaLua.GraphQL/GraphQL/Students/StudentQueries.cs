@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.Students;
 
+[Authorize]
 [QueryType]
 public sealed class StudentQueries
 {
@@ -11,34 +12,11 @@ public sealed class StudentQueries
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Student> GetStudents(
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Students.AsNoTracking();
-    }
+    public IQueryable<Student> GetStudents([Service] CRMDbContext db) =>
+        db.Students.AsNoTracking();
 
     [UseFirstOrDefault]
     [UseProjection]
-    public IQueryable<Student> GetStudentById(
-        Guid id,
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Students.AsNoTracking().Where(x => x.Id == id);
-    }
+    public IQueryable<Student> GetStudentById(Guid id, [Service] CRMDbContext db) =>
+        db.Students.AsNoTracking().Where(x => x.Id == id);
 }

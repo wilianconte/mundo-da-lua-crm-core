@@ -8,6 +8,7 @@ using MyCRM.GraphQL.GraphQL.Companies.Inputs;
 
 namespace MyCRM.GraphQL.GraphQL.Companies;
 
+[Authorize]
 [MutationType]
 public sealed class CompanyMutations
 {
