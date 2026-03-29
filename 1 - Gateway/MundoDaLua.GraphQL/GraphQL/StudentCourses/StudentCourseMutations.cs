@@ -8,6 +8,7 @@ using MyCRM.GraphQL.GraphQL.StudentCourses.Inputs;
 
 namespace MyCRM.GraphQL.GraphQL.StudentCourses;
 
+[Authorize]
 [MutationType]
 public sealed class StudentCourseMutations
 {
