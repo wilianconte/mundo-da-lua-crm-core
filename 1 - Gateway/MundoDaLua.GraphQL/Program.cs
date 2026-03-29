@@ -115,7 +115,7 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
-    .AddAuthorizationCore()
+    .AddAuthorization()
     .AddFiltering()
     .AddSorting()
     .AddProjections()
