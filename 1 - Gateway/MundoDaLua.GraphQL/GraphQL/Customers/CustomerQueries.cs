@@ -22,14 +22,15 @@ public class CustomerQueries
                     .SetCode("AUTH_NOT_AUTHORIZED")
                     .Build());
 
-        return db.Customers;
+        return db.Customers.AsNoTracking();
     }
 
-    public async Task<Customer?> GetCustomerByIdAsync(
+    [UseFirstOrDefault]
+    [UseProjection]
+    public IQueryable<Customer> GetCustomerById(
         Guid id,
         [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor,
-        CancellationToken ct)
+        [Service] IHttpContextAccessor httpContextAccessor)
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
             throw new GraphQLException(
@@ -38,6 +39,6 @@ public class CustomerQueries
                     .SetCode("AUTH_NOT_AUTHORIZED")
                     .Build());
 
-        return await db.Customers.FirstOrDefaultAsync(x => x.Id == id, ct);
+        return db.Customers.AsNoTracking().Where(x => x.Id == id);
     }
 }

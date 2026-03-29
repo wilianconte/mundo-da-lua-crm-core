@@ -25,11 +25,12 @@ public sealed class CompanyQueries
         return db.Companies.AsNoTracking();
     }
 
-    public async Task<Company?> GetCompanyByIdAsync(
+    [UseFirstOrDefault]
+    [UseProjection]
+    public IQueryable<Company> GetCompanyById(
         Guid id,
         [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor,
-        CancellationToken ct)
+        [Service] IHttpContextAccessor httpContextAccessor)
     {
         if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
             throw new GraphQLException(
@@ -38,6 +39,6 @@ public sealed class CompanyQueries
                     .SetCode("AUTH_NOT_AUTHORIZED")
                     .Build());
 
-        return await db.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        return db.Companies.AsNoTracking().Where(x => x.Id == id);
     }
 }
