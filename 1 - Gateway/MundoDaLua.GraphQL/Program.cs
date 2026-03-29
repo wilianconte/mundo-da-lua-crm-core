@@ -56,6 +56,13 @@ builder.Services.AddScoped<ITenantService, HttpTenantService>();
 
 // Autenticação JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwtSection["Key"];
+
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key não configurado ou muito curto. " +
+        "Defina a variável de ambiente Jwt__Key com no mínimo 32 caracteres.");
+
 builder.Services.AddAuthorization();
 
 builder.Services
@@ -71,7 +78,7 @@ builder.Services
             ValidIssuer = jwtSection["Issuer"],
             ValidAudience = jwtSection["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["Key"]!))
+                Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
