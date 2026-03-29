@@ -12,16 +12,22 @@ public static class AuthDataSeeder
     {
         tenantService.SetTenant(SeedTenantId);
 
-        var exists = await db.Users
+        var user = await db.Users
             .IgnoreQueryFilters()
-            .AnyAsync(u => u.Email == "admin@mundodalua.com" && u.TenantId == SeedTenantId);
-
-        if (exists) return;
+            .FirstOrDefaultAsync(u => u.Email == "admin@mundodalua.com" && u.TenantId == SeedTenantId);
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
-        var user = User.Create(SeedTenantId, "Administrador", "admin@mundodalua.com", passwordHash);
 
-        await db.Users.AddAsync(user);
+        if (user is null)
+        {
+            user = User.Create(SeedTenantId, "Administrador", "admin@mundodalua.com", passwordHash);
+            await db.Users.AddAsync(user);
+        }
+        else
+        {
+            user.UpdatePassword(passwordHash);
+        }
+
         await db.SaveChangesAsync();
     }
 }
