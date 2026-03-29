@@ -589,3 +589,13 @@ curl -s -X POST http://localhost:5095/graphql \
 - usar `AllowIntrospection(bool)` no HC 15 — está obsoleto, usar `DisableIntrospection(!isDev)`
 - usar `IQueryResult` para tipar o resultado de `executor.ExecuteAsync()` em testes HC 15 — o tipo correto é obtido via `.ExpectOperationResult()` que retorna `IOperationResult`
 - chamar `.AddAuthorization()` no chain do `AddGraphQLServer()` — o método correto no `IRequestExecutorBuilder` é `.AddAuthorizationCore()` (extensão de `HotChocolateAuthorizeRequestExecutorBuilder`); `.AddAuthorization()` existe apenas em `IServiceCollection` (ASP.NET Core), não no builder HC
+
+---
+
+## UPDATE 2026-03-29 - AUTH MUTATIONS
+
+Quando novas mutations forem adicionadas em `AuthMutations`:
+
+- manter `Login` com `[AllowAnonymous]`;
+- aplicar `[Authorize]` nas mutations sensiveis (ex.: `CreateUserAsync`);
+- manter tratamento padrao de erro com `GraphQLException` + `extensions.code`.

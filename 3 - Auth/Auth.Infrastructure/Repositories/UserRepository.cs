@@ -27,4 +27,7 @@ public sealed class UserRepository : IUserRepository
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Email == email.ToLowerInvariant() && !x.IsDeleted, ct);
     public async Task<bool> EmailExistsAsync(Guid tenantId, string email, CancellationToken ct = default) =>
         await _db.Users.AnyAsync(x => x.TenantId == tenantId && x.Email == email.ToLowerInvariant(), ct);
+
+    public async Task<bool> PersonIdAlreadyLinkedAsync(Guid tenantId, Guid personId, CancellationToken ct = default) =>
+        await _db.Users.AnyAsync(x => x.TenantId == tenantId && x.PersonId == personId, ct);
 }
