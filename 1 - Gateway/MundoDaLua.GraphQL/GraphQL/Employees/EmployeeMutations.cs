@@ -6,6 +6,7 @@ using MyCRM.GraphQL.GraphQL.Employees.Inputs;
 
 namespace MyCRM.GraphQL.GraphQL.Employees;
 
+[Authorize]
 [MutationType]
 public sealed class EmployeeMutations
 {

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.Companies;
 
+[Authorize]
 [QueryType]
 public sealed class CompanyQueries
 {
@@ -11,34 +12,11 @@ public sealed class CompanyQueries
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Company> GetCompanies(
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Companies.AsNoTracking();
-    }
+    public IQueryable<Company> GetCompanies([Service] CRMDbContext db) =>
+        db.Companies.AsNoTracking();
 
     [UseFirstOrDefault]
     [UseProjection]
-    public IQueryable<Company> GetCompanyById(
-        Guid id,
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Companies.AsNoTracking().Where(x => x.Id == id);
-    }
+    public IQueryable<Company> GetCompanyById(Guid id, [Service] CRMDbContext db) =>
+        db.Companies.AsNoTracking().Where(x => x.Id == id);
 }

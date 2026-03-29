@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.Employees;
 
+[Authorize]
 [QueryType]
 public sealed class EmployeeQueries
 {
@@ -11,34 +12,11 @@ public sealed class EmployeeQueries
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Employee> GetEmployees(
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Employees.AsNoTracking();
-    }
+    public IQueryable<Employee> GetEmployees([Service] CRMDbContext db) =>
+        db.Employees.AsNoTracking();
 
     [UseFirstOrDefault]
     [UseProjection]
-    public IQueryable<Employee> GetEmployeeById(
-        Guid id,
-        [Service] CRMDbContext db,
-        [Service] IHttpContextAccessor httpContextAccessor)
-    {
-        if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-            throw new GraphQLException(
-                ErrorBuilder.New()
-                    .SetMessage("Não autorizado. Faça login para continuar.")
-                    .SetCode("AUTH_NOT_AUTHORIZED")
-                    .Build());
-
-        return db.Employees.AsNoTracking().Where(x => x.Id == id);
-    }
+    public IQueryable<Employee> GetEmployeeById(Guid id, [Service] CRMDbContext db) =>
+        db.Employees.AsNoTracking().Where(x => x.Id == id);
 }

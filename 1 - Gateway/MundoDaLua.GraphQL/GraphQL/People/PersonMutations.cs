@@ -7,6 +7,7 @@ using MyCRM.GraphQL.GraphQL.People.Inputs;
 
 namespace MyCRM.GraphQL.GraphQL.People;
 
+[Authorize]
 [MutationType]
 public sealed class PersonMutations
 {
