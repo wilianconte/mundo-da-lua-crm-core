@@ -8,6 +8,7 @@ namespace MyCRM.GraphQL.GraphQL.Auth;
 [MutationType]
 public class AuthMutations
 {
+    [AllowAnonymous]
     public async Task<LoginDto> LoginAsync(LoginInput input, [Service] IMediator mediator, CancellationToken ct)
     {
         var result = await mediator.Send(new LoginCommand(input.TenantId, input.Email, input.Password), ct);

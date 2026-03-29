@@ -112,4 +112,45 @@ public sealed class AuthorizationHandlerRegistrationTests
 
         Assert.Null(exception);
     }
+
+    /// <summary>
+    /// Garante que um campo com [AllowAnonymous] dentro de um tipo que tem [Authorize]
+    /// em nível de classe ainda é acessível sem token — cenário do mutation login.
+    /// </summary>
+    [Fact]
+    public async Task AllowAnonymousField_InsideAuthorizedType_IsAccessibleWithoutToken()
+    {
+        var services = CreateBaseServices();
+        services.AddGraphQLServer()
+            .AddMutationType(d => d.Name("Mutation"))
+            .AddTypeExtension<AuthorizedMutations>()
+            .AddTypeExtension<PublicMutations>()
+            .AddQueryType(d => d.Name("Query").Field("_").Resolve("ok"))
+            .AddAuthorization();
+
+        var provider = services.BuildServiceProvider();
+        var executor = await provider
+            .GetRequiredService<IRequestExecutorResolver>()
+            .GetRequestExecutorAsync();
+
+        var result = (await executor.ExecuteAsync("mutation { login }"))
+            .ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        Assert.Equal("token", result.Data!["login"]?.ToString());
+    }
+
+    [Authorize]
+    [ExtendObjectType(OperationTypeNames.Mutation)]
+    private sealed class AuthorizedMutations
+    {
+        public string SecureOp() => "done";
+    }
+
+    [ExtendObjectType(OperationTypeNames.Mutation)]
+    private sealed class PublicMutations
+    {
+        [AllowAnonymous]
+        public string Login() => "token";
+    }
 }
