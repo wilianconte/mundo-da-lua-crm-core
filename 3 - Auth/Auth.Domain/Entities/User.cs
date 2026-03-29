@@ -9,9 +9,16 @@ public class User : TenantEntity
     public string Name { get; private set; } = default!;
     public bool IsActive { get; private set; }
 
+    /// <summary>
+    /// Referência ao registro Person do módulo CRM.
+    /// Cada usuário está vinculado a exatamente uma pessoa.
+    /// Sem navigation property — módulos Auth e CRM são independentes.
+    /// </summary>
+    public Guid? PersonId { get; private set; }
+
     private User() { }
 
-    public static User Create(Guid tenantId, string name, string email, string passwordHash)
+    public static User Create(Guid tenantId, string name, string email, string passwordHash, Guid? personId = null)
     {
         return new User
         {
@@ -20,12 +27,25 @@ public class User : TenantEntity
             Email = email.Trim().ToLowerInvariant(),
             PasswordHash = passwordHash,
             IsActive = true,
+            PersonId = personId,
         };
     }
 
     public void UpdatePassword(string passwordHash)
     {
         PasswordHash = passwordHash;
+        Touch();
+    }
+
+    public void LinkToPerson(Guid personId)
+    {
+        PersonId = personId;
+        Touch();
+    }
+
+    public void UnlinkFromPerson()
+    {
+        PersonId = null;
         Touch();
     }
 

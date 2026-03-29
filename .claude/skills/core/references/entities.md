@@ -134,6 +134,22 @@ Restrições de unicidade:
 
 ---
 
+## User — entidade de autenticação (`auth.users`)
+
+`User` representa a conta de acesso ao sistema. Cada usuário está vinculado a exatamente uma `Person` do módulo CRM.
+
+```
+Person 1──0..1  User  (PersonId em User — sem FK de banco, módulos independentes)
+```
+
+Campos específicos: `Email`, `PasswordHash`, `Name`, `IsActive`, `PersonId` (nullable Guid).
+
+Restrição de unicidade: `(TenantId, PersonId)` único onde `PersonId IS NOT NULL` — uma pessoa não pode ter dois usuários ativos no mesmo tenant.
+
+**Design decision:** A FK entre `User` (auth schema) e `Person` (crm schema) é lógica, não física — módulos Auth e CRM são independentes com DbContexts separados. Sem navigation property EF. O vínculo é gerenciado via `User.LinkToPerson(Guid)` e `User.UnlinkFromPerson()`.
+
+---
+
 ## Customer (`crm.customers`)
 
 Entidade legada de CRM genérico. Futuramente será refatorada para referenciar `Person`.

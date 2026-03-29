@@ -130,6 +130,17 @@ await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
 
 ---
 
+## REGRA OBRIGATÓRIA — SEED PARA TODA NOVA ENTIDADE
+
+**Toda nova entidade deve ter `Seed{Entidades}Async` implementado e registrado em `SeedAsync` antes de encerrar a tarefa.**
+
+Além disso, **revisar os seeds existentes** sempre que:
+- Uma nova FK obrigatória for adicionada a entidade que já tem seed → atualizar os registros
+- Um enum usado no seed for alterado → verificar se os valores ainda são válidos
+- Um campo usado no seed for removido → remover do seed para não quebrar compilação
+
+---
+
 ## PADRÃO DE SEED
 
 ```csharp
