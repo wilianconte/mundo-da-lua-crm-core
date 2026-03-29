@@ -14,6 +14,23 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+if (allowedOrigins.Length == 0 && !builder.Environment.IsDevelopment())
+    throw new InvalidOperationException(
+        "CORS não configurado. Defina Cors:AllowedOrigins (ou CORS__AllowedOrigins__0) antes de iniciar em produção.");
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 // Rate limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -86,6 +103,11 @@ builder.Services
     .AddFiltering()
     .AddSorting()
     .AddProjections()
+    .ModifyRequestOptions(opt =>
+    {
+        opt.IncludeExceptionDetails = builder.Environment.IsDevelopment();
+    })
+    .DisableIntrospection(!builder.Environment.IsDevelopment())
     .ModifyCostOptions(o =>
     {
         o.MaxFieldCost = 100_000;
@@ -96,6 +118,7 @@ var app = builder.Build();
 
 await app.MigrateAllDbContextsAsync();
 
+app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
