@@ -9,7 +9,7 @@ O módulo de usuários expõe via GraphQL os dados de acesso/identidade da conta
 | `User` | `auth` | Conta de acesso — credenciais, login, status |
 | `Person` | `crm` | Identidade humana — nome completo, CPF, contato |
 
-> `User` **não expõe** `personId` no schema GraphQL. O join entre usuário e pessoa, quando necessário, deve ocorrer via `Person.userId` (no módulo CRM) ou outro identificador de negócio definido pelo back-end.
+> cada `User` pode estar vinculado a uma `Person` (módulo CRM) através do campo `personId` (nullable). O vínculo é feito pelo back-end — o front lê o `personId` e, se necessário, busca os dados da pessoa separadamente.
 
 ---
 
@@ -62,6 +62,7 @@ Estes são os únicos campos expostos pelo schema. Campos sensíveis são ignora
   name        # string — nome de exibição da conta
   email       # string — e-mail de login
   isActive    # boolean — se o usuário está ativo
+  personId    # Guid? — id da Person vinculada no módulo CRM; null se não vinculado
   createdAt   # DateTimeOffset — data/hora de criação (UTC)
   updatedAt   # DateTimeOffset? — data/hora da última alteração (UTC), null se nunca alterado
   createdBy   # Guid? — id do usuário que criou o registro
@@ -108,6 +109,7 @@ query GetUsers(
       name
       email
       isActive
+      personId
       createdAt
       updatedAt
       createdBy
@@ -149,6 +151,7 @@ query GetUserById($id: UUID!) {
     name
     email
     isActive
+    personId
     createdAt
     updatedAt
     createdBy
@@ -177,6 +180,18 @@ getUsers(where: { isActive: { eq: true } })
 
 ```graphql
 getUsers(where: { email: { contains: "mundodalua" } })
+```
+
+### Apenas usuários vinculados a uma Person
+
+```graphql
+getUsers(where: { personId: { neq: null } })
+```
+
+### Apenas usuários sem Person vinculada
+
+```graphql
+getUsers(where: { personId: { eq: null } })
 ```
 
 ### Buscar por nome (parcial, corresponde ao `contains`)
@@ -221,6 +236,7 @@ interface UserRow {
   name: string
   email: string
   isActive: boolean
+  personId: string | null     // Guid da Person vinculada no módulo CRM
   createdAt: string           // ISO 8601 com offset UTC
   updatedAt: string | null
   createdBy: string | null    // Guid do usuário auditor

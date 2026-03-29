@@ -15,6 +15,7 @@ public sealed class UserObjectType : ObjectType<User>
         descriptor.Field(x => x.UpdatedAt);
         descriptor.Field(x => x.CreatedBy);
         descriptor.Field(x => x.UpdatedBy);
+        descriptor.Field(x => x.PersonId);
 
         descriptor.Ignore(x => x.PasswordHash);
         descriptor.Ignore(x => x.TenantId);
