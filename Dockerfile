@@ -33,7 +33,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 appgroup \
  && adduser  --system --uid 1001 --ingroup appgroup --no-create-home appuser
 
-COPY --from=build --chown=appuser:appgroup /app/publish .
+COPY --from=build --chown=root:root --chmod=755 /app/publish/. .
 
 USER appuser
 

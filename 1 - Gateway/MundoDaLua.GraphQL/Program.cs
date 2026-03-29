@@ -3,12 +3,14 @@ using MyCRM.CRM.Infrastructure;
 using MyCRM.Auth.Application;
 using MyCRM.Auth.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,20 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod());
+});
+
+// Rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddSlidingWindowLimiter("graphql", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.SegmentsPerWindow = 6;
+        opt.QueueLimit = 0;
+        opt.AutoReplenishment = true;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
 // Multi-tenancy
@@ -53,6 +69,10 @@ builder.Services
                 Encoding.UTF8.GetBytes(jwtSection["Key"]!))
         };
     });
+
+// Exception handler
+builder.Services.AddExceptionHandler<MyCRM.GraphQL.Middleware.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Modules
 builder.Services.AddCustomersApplication();
@@ -102,12 +122,14 @@ var app = builder.Build();
 
 await app.MigrateAllDbContextsAsync();
 
+app.UseExceptionHandler();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
 
-app.MapGraphQL();
+app.MapGraphQL().RequireRateLimiting("graphql");
 
 if (app.Environment.IsDevelopment())
     app.MapGet("/", () => Results.Redirect("/graphql"));
