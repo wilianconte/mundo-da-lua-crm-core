@@ -47,11 +47,18 @@ EOF
 )"
 ```
 
+**Após criar o PR, retornar para a branch `dev`:**
+
+```bash
+git checkout dev
+```
+
 Regras:
 - Nunca commitar diretamente em `main`
 - Nome da branch deve descrever a feature/fix em inglês, no formato `claude/<descricao>`
 - O PR deve ser criado antes de encerrar a tarefa — sem precisar que o usuário peça
 - O link do PR deve ser reportado ao usuário ao final
+- **SEMPRE** voltar para `dev` após criar o PR — nunca permanecer na branch de feature
 
 ---
 
