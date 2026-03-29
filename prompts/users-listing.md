@@ -2,39 +2,30 @@
 
 ## Contexto
 
-O sistema possui dois conceitos distintos que se complementam:
+O módulo de usuários expõe via GraphQL os dados de acesso/identidade da conta — não há vínculo direto com `Person` (CRM) retornado pela query de usuários. Caso precise cruzar dados de `Person`, consulte a documentação de pessoas separadamente.
 
-| Conceito | Schema | O que representa |
+| Conceito | Módulo | O que representa |
 |---|---|---|
-| `User` | `auth` | Conta de acesso — credenciais, login, permissões |
-| `Person` | `crm` | Identidade humana — nome completo, CPF, contato, dados pessoais |
+| `User` | `auth` | Conta de acesso — credenciais, login, status |
+| `Person` | `crm` | Identidade humana — nome completo, CPF, contato |
 
-**Relação:** cada `User` pode estar vinculado a exatamente uma `Person` através do campo `personId` (nullable). A restrição de unicidade garante que uma `Person` nunca tenha dois usuários no mesmo tenant.
-
-```
-Person 1 ──── 0..1 User
-              └── User.personId → Person.id
-```
+> `User` **não expõe** `personId` no schema GraphQL. O join entre usuário e pessoa, quando necessário, deve ocorrer via `Person.userId` (no módulo CRM) ou outro identificador de negócio definido pelo back-end.
 
 ---
 
-## Estado atual do backend
+## Endpoints disponíveis
 
-| Operação | Disponível? | Endpoint GraphQL |
+| Operação | Endpoint GraphQL | Autenticação |
 |---|---|---|
-| Login | ✅ sim | `mutation { login(...) }` |
-| Listar usuários | ✅ sim | `query { getUsers }` |
-| Buscar usuário por ID | ✅ sim | `query { getUserById }` |
-| Listar pessoas | ✅ sim | `query { getPeople }` |
-| Buscar pessoa por ID | ✅ sim | `query { getPersonById }` |
-
-> **Nota:** `personId` estará disponível no campo `User` após o merge do PR que vincula User ↔ Person. Enquanto isso, os demais campos já estão disponíveis.
+| Login | `mutation { login(...) }` | ❌ Anônimo |
+| Listar usuários (paginado) | `query { getUsers(...) }` | ✅ JWT obrigatório |
+| Buscar usuário por ID | `query { getUserById(...) }` | ✅ JWT obrigatório |
 
 ---
 
 ## Como obter o token JWT (autenticação obrigatória)
 
-Todas as queries exigem autenticação. O token vem do campo `token` da mutation de login:
+Todas as queries exigem autenticação. O token vem do campo `token` retornado pela mutation de login:
 
 ```graphql
 mutation Login {
@@ -52,27 +43,59 @@ mutation Login {
 }
 ```
 
-Enviar em todas as requisições seguintes:
+Enviar em **todas** as requisições seguintes:
 ```
 Authorization: Bearer <token>
 ```
 
-O `tenantId` está embutido no JWT — não é necessário enviá-lo em headers separados.
+O `tenantId` está embutido no JWT — o servidor filtra os dados por tenant automaticamente, sem necessidade de header extra.
 
 ---
 
-## Query de listagem de usuários (quando implementada)
+## Campos disponíveis em `User`
 
-A query seguirá o padrão de cursor-based pagination do Hot Chocolate:
+Estes são os únicos campos expostos pelo schema. Campos sensíveis são ignorados pelo servidor e nunca aparecem na resposta.
+
+```graphql
+{
+  id          # Guid — identificador único do usuário
+  name        # string — nome de exibição da conta
+  email       # string — e-mail de login
+  isActive    # boolean — se o usuário está ativo
+  createdAt   # DateTimeOffset — data/hora de criação (UTC)
+  updatedAt   # DateTimeOffset? — data/hora da última alteração (UTC), null se nunca alterado
+  createdBy   # Guid? — id do usuário que criou o registro
+  updatedBy   # Guid? — id do usuário que fez a última alteração
+}
+```
+
+> Campos **omitidos pelo servidor** (não existem no schema): `passwordHash`, `tenantId`, `isDeleted`, `deletedAt`.
+
+---
+
+## Query de listagem de usuários
+
+A query usa **paginação cursor-based** (padrão Hot Chocolate). Suporta filtragem e ordenação declarativas.
+
+### Assinatura
 
 ```graphql
 query GetUsers(
   $first: Int
   $after: String
+  $last: Int
+  $before: String
   $where: UserFilterInput
   $order: [UserSortInput!]
 ) {
-  getUsers(first: $first, after: $after, where: $where, order: $order) {
+  getUsers(
+    first: $first
+    after: $after
+    last: $last
+    before: $before
+    where: $where
+    order: $order
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -85,15 +108,17 @@ query GetUsers(
       name
       email
       isActive
-      personId
       createdAt
       updatedAt
+      createdBy
+      updatedBy
     }
   }
 }
 ```
 
-Exemplo de variáveis para primeira página:
+### Variáveis — primeira página (20 itens, ordem alfabética)
+
 ```json
 {
   "first": 20,
@@ -101,143 +126,125 @@ Exemplo de variáveis para primeira página:
 }
 ```
 
----
+### Variáveis — próxima página (cursor-based)
 
-## Como acessar dados de Pessoa a partir de um Usuário
-
-Como `User` (módulo auth) e `Person` (módulo crm) são DbContexts independentes, **não existe join automático no GraphQL** entre as duas entidades. O front-end deve fazer duas requisições:
-
-### Passo 1 — Buscar usuários
-
-```graphql
-query GetUsers {
-  getUsers(first: 50) {
-    nodes {
-      id
-      name
-      email
-      isActive
-      personId   # ← chave para buscar dados de pessoa
-    }
-  }
-}
-```
-
-### Passo 2 — Para cada usuário com `personId`, buscar a pessoa
-
-```graphql
-query GetPersonById($id: UUID!) {
-  getPersonById(id: $id) {
-    id
-    fullName
-    documentNumber
-    birthDate
-    gender
-    email
-    phone
-    mobilePhone
-    status
-  }
-}
-```
-
-### Estratégia recomendada no front-end
-
-Para evitar N+1 requisições, busque todos os `personId` únicos da listagem e faça uma única query com filtro:
-
-```graphql
-query GetPeopleByIds($ids: [UUID!]!) {
-  getPeople(where: { id: { in: $ids } }) {
-    nodes {
-      id
-      fullName
-      documentNumber
-      email
-      mobilePhone
-    }
-  }
-}
-```
-
-Depois cruze os dados localmente por `user.personId === person.id`.
-
----
-
-## Campos disponíveis em Person
-
-```graphql
+```json
 {
-  id
-  fullName          # nome completo
-  documentNumber    # CPF
-  birthDate
-  gender            # MALE | FEMALE | OTHER | PREFER_NOT_TO_SAY
-  maritalStatus
-  email
-  phone
-  mobilePhone
-  whatsApp
-  status            # ACTIVE | INACTIVE | BLOCKED
-  notes
-  createdAt
-  updatedAt
+  "first": 20,
+  "after": "<endCursor da página anterior>",
+  "order": [{ "name": "ASC" }]
 }
 ```
 
 ---
 
-## Filtros e ordenação úteis para a listagem
+## Query de busca por ID
 
-### Filtrar usuários ativos
+Retorna um único usuário ou `null` se não encontrado.
 
 ```graphql
-query {
-  getUsers(where: { isActive: { eq: true } }) {
-    nodes { id name email personId }
+query GetUserById($id: UUID!) {
+  getUserById(id: $id) {
+    id
+    name
+    email
+    isActive
+    createdAt
+    updatedAt
+    createdBy
+    updatedBy
   }
 }
 ```
 
-### Buscar por e-mail (parcial)
-
-```graphql
-query {
-  getUsers(where: { email: { contains: "mundodalua" } }) {
-    nodes { id name email }
-  }
-}
-```
-
-### Ordenar por nome
-
-```graphql
-query {
-  getUsers(order: [{ name: ASC }]) {
-    nodes { id name email }
-  }
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000001"
 }
 ```
 
 ---
 
-## Modelo de dados final para a tela (sugestão)
+## Filtros úteis (`UserFilterInput`)
 
-Após cruzar User + Person, cada linha da listagem terá:
+### Apenas usuários ativos
+
+```graphql
+getUsers(where: { isActive: { eq: true } })
+```
+
+### Buscar por e-mail (correspondência parcial)
+
+```graphql
+getUsers(where: { email: { contains: "mundodalua" } })
+```
+
+### Buscar por nome (parcial, corresponde ao `contains`)
+
+```graphql
+getUsers(where: { name: { contains: "admin" } })
+```
+
+### Combinar filtros (AND implícito)
+
+```graphql
+getUsers(where: {
+  and: [
+    { isActive: { eq: true } },
+    { name: { contains: "admin" } }
+  ]
+})
+```
+
+---
+
+## Opções de ordenação (`UserSortInput`)
+
+```graphql
+# Alfabético crescente
+getUsers(order: [{ name: ASC }])
+
+# Mais recentes primeiro
+getUsers(order: [{ createdAt: DESC }])
+
+# Ativos primeiro, depois alfabético
+getUsers(order: [{ isActive: DESC }, { name: ASC }])
+```
+
+---
+
+## Modelo de dados sugerido para a tela
 
 ```ts
 interface UserRow {
-  // dados do User (auth)
-  id: string
+  id: string                  // Guid
+  name: string
   email: string
   isActive: boolean
-  createdAt: string
+  createdAt: string           // ISO 8601 com offset UTC
+  updatedAt: string | null
+  createdBy: string | null    // Guid do usuário auditor
+  updatedBy: string | null
+}
 
-  // dados da Person (crm) — null se usuário não vinculado a pessoa
-  person: {
-    id: string
-    fullName: string
-    documentNumber: string | null
-    mobilePhone: string | null
-  } | null
+interface UserPageResult {
+  totalCount: number
+  pageInfo: {
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    startCursor: string
+    endCursor: string
+  }
+  nodes: UserRow[]
 }
 ```
+
+---
+
+## Notas de implementação
+
+- **Autenticação**: todas as queries (`getUsers`, `getUserById`) possuem o atributo `[Authorize]` — requisições sem JWT válido retornam erro `401`.
+- **Multi-tenancy**: o servidor utiliza o `tenantId` embutido no JWT para filtrar os usuários automaticamente. O front não precisa (nem deve) enviar o tenant em headers ou variáveis de query.
+- **Soft delete**: registros com `isDeleted = true` são filtrados automaticamente pelo EF Core e **nunca aparecem** nas respostas — não é necessário filtrar no front.
+- **Paginação**: prefira sempre enviar `first` (forward paging). Evite `last`/`before` a não ser que a UX exija navegação reversa explícita.
+- **Projeção**: a query suporta `[UseProjection]` — solicite apenas os campos que a tela realmente precisa para evitar over-fetching.
