@@ -73,7 +73,7 @@ builder.Services
     {
         opt.IncludeExceptionDetails = builder.Environment.IsDevelopment();
     })
-    .AllowIntrospection(builder.Environment.IsDevelopment())
+    .DisableIntrospection(!builder.Environment.IsDevelopment())
     .ModifyCostOptions(o =>
     {
         o.MaxFieldCost = 100_000;
