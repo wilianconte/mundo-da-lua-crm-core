@@ -58,7 +58,6 @@ coverage.cobertura.xml
 !.env.example
 appsettings.*.json
 !appsettings.json
-!appsettings.Development.json
 secrets.json
 **/*secrets*.json
 
