@@ -47,8 +47,6 @@ jobs:
     needs: build
     permissions:
       contents: read
-    outputs:
-      image: ${{ steps.image.outputs.value }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,11 +79,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Capturar imagem com SHA
-        id: image
-        run: |
-          echo "value=${{ secrets.DOCKERHUB_USERNAME }}/mundo-da-lua-crm-core:dev-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
-
   rollout:
     name: Rollout
     runs-on: ubuntu-latest
@@ -95,11 +88,15 @@ jobs:
         uses: azure/setup-kubectl@v4
 
       - name: Patch da imagem no deployment
+        env:
+          REGISTRY_USER: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          IMAGE="$REGISTRY_USER/mundo-da-lua-crm-core:dev-${GITHUB_SHA:0:7}"
+          echo "Aplicando imagem: $IMAGE"
           kubectl set image deployment/mundo-da-lua-crm-core \
-            mundo-da-lua-crm-core=${{ needs.push.outputs.image }} \
+            mundo-da-lua-crm-core=$IMAGE \
             -n mundo-da-lua-crm
           kubectl rollout status deployment/mundo-da-lua-crm-core \
             -n mundo-da-lua-crm --timeout=120s
