@@ -17,6 +17,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\2 - CRM\CRM.Application\MyCRM.CRM.Application.csproj" />
+    <ProjectReference Include="..\..\3 - Auth\Auth.Application\MyCRM.Auth.Application.csproj" />
+    <ProjectReference Include="..\..\3 - Auth\Auth.Infrastructure\MyCRM.Auth.Infrastructure.csproj" />
     <ProjectReference Include="..\..\3 - Shared\Shared.Kernel\MyCRM.Shared.Kernel.csproj" />
   </ItemGroup>
 </Project>
