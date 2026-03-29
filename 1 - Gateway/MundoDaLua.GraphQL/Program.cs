@@ -107,6 +107,8 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.AuthMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.UserQueries>()
+    .AddType<MyCRM.GraphQL.GraphQL.Auth.UserObjectType>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianQueries>()
