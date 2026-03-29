@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
+using MyCRM.GraphQL.Services;
+using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using Serilog;
 using System.Text;
@@ -53,6 +55,7 @@ builder.Services.AddRateLimiter(options =>
 // Multi-tenancy
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantService, HttpTenantService>();
+builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
 
 // Autenticação JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -104,6 +107,9 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.AuthMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleQueries>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.UserRoleMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianQueries>()

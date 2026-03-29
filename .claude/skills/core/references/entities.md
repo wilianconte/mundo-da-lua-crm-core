@@ -134,6 +134,43 @@ Restrições de unicidade:
 
 ---
 
+## Role — entidade de papel/permissão (`auth.roles`)
+
+`Role` representa papéis de acesso no sistema, com controle granular de permissões. Permite ativar/desativar roles sem excluí-los.
+
+```
+Role 1──0..* UserRole  (FK em UserRole.RoleId)
+```
+
+Campos específicos: `Name`, `Description`, `Permissions` (string[]), `IsActive`.
+
+Restrição de unicidade: `(TenantId, Name)` único onde `IsDeleted = false` — nomes de roles são únicos por tenant.
+
+**Design decision:** 
+- `Permissions` é um array de strings PostgreSQL para flexibilidade. Cada permissão segue o padrão `resource.action` (ex: `users.read`, `customers.write`, `roles.delete`).
+- `IsActive` permite desativar roles temporariamente sem perder histórico de atribuições.
+- Métodos de domínio: `Create`, `Update`, `UpdatePermissions`, `Activate`, `Deactivate`.
+
+---
+
+## UserRole — entidade de relacionamento usuário↔role (`auth.user_roles`)
+
+Entidade de associação entre `User` e `Role`. Permite atribuição múltipla de roles por usuário (many-to-many).
+
+```
+UserRole *──1 User  (FK em UserRole.UserId, restrict)
+UserRole *──1 Role  (FK em UserRole.RoleId, restrict)
+```
+
+Restrição de unicidade: `(TenantId, UserId, RoleId)` único onde `IsDeleted = false` — mesmo role não pode ser atribuído duas vezes ao mesmo usuário.
+
+**Design decision:**
+- Ambas as FKs usam `DeleteBehavior.Restrict` — nem exclusão de User nem de Role deve apagar automaticamente o histórico de atribuições.
+- Soft delete preserva auditoria de quem teve qual role e quando.
+- Não há campos adicionais de contexto (data de expiração, escopo) — manter simples até surgirem requisitos concretos.
+
+---
+
 ## Customer (`crm.customers`)
 
 Entidade legada de CRM genérico. Futuramente será refatorada para referenciar `Person`.

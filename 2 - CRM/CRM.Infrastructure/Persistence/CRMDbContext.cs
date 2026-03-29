@@ -1,5 +1,7 @@
 using MyCRM.CRM.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using MyCRM.Shared.Kernel.Audit;
+using MyCRM.Shared.Kernel.Entities;
 using MyCRM.Shared.Kernel.MultiTenancy;
 
 namespace MyCRM.CRM.Infrastructure.Persistence;
@@ -7,11 +9,13 @@ namespace MyCRM.CRM.Infrastructure.Persistence;
 public sealed class CRMDbContext : DbContext
 {
     private readonly ITenantService _tenant;
+    private readonly ICurrentUserService _currentUser;
 
-    public CRMDbContext(DbContextOptions<CRMDbContext> options, ITenantService tenant)
+    public CRMDbContext(DbContextOptions<CRMDbContext> options, ITenantService tenant, ICurrentUserService currentUser)
         : base(options)
     {
         _tenant = tenant;
+        _currentUser = currentUser;
     }
 
     public DbSet<Customer>        Customers        => Set<Customer>();
@@ -57,12 +61,24 @@ public sealed class CRMDbContext : DbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        var userId = _currentUser.UserId;
+
         foreach (var entry in ChangeTracker.Entries<IHasTenantId>())
         {
             if (entry.State == EntityState.Added)
                 entry.Entity.TenantId = _tenant.TenantId;
         }
 
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            if (entry.State == EntityState.Added)
+                entry.Entity.CreatedBy = userId;
+
+            if (entry.State is EntityState.Added or EntityState.Modified)
+                entry.Entity.UpdatedBy = userId;
+        }
+
         return base.SaveChangesAsync(cancellationToken);
     }
 }
+

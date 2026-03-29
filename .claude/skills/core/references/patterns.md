@@ -589,3 +589,55 @@ curl -s -X POST http://localhost:5095/graphql \
 - usar `AllowIntrospection(bool)` no HC 15 — está obsoleto, usar `DisableIntrospection(!isDev)`
 - usar `IQueryResult` para tipar o resultado de `executor.ExecuteAsync()` em testes HC 15 — o tipo correto é obtido via `.ExpectOperationResult()` que retorna `IOperationResult`
 - chamar `.AddAuthorization()` no chain do `AddGraphQLServer()` — o método correto no `IRequestExecutorBuilder` é `.AddAuthorizationCore()` (extensão de `HotChocolateAuthorizeRequestExecutorBuilder`); `.AddAuthorization()` existe apenas em `IServiceCollection` (ASP.NET Core), não no builder HC
+
+---
+
+## PADRÃO DE DESIGNTIME DBCONTEXT FACTORY
+
+**Obrigatório para cada DbContext** que usar migrations do EF Core. Sem factory, `dotnet ef migrations add` falha com `Unable to create a 'DbContext'`.
+
+```csharp
+// {Modulo}.Infrastructure/Persistence/{Modulo}DbContextFactory.cs
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using MyCRM.Shared.Kernel.Audit;
+using MyCRM.Shared.Kernel.MultiTenancy;
+
+namespace MyCRM.{Modulo}.Infrastructure.Persistence;
+
+public sealed class {Modulo}DbContextFactory : IDesignTimeDbContextFactory<{Modulo}DbContext>
+{
+    public {Modulo}DbContext CreateDbContext(string[] args)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<{Modulo}DbContext>();
+        
+        // Connection string para design time - ajustar conforme necessário
+        optionsBuilder.UseNpgsql("Host=localhost;Database=mycrm_dev;Username=postgres;Password=postgres");
+        
+        // Serviços fake para design time
+        var tenantService = new DesignTimeTenantService();
+        var currentUserService = new DesignTimeCurrentUserService();
+        
+        return new {Modulo}DbContext(optionsBuilder.Options, tenantService, currentUserService);
+    }
+}
+
+// Implementações mínimas para design time
+internal class DesignTimeTenantService : ITenantService
+{
+    public Guid TenantId { get; } = Guid.Empty;
+    public void SetTenant(Guid tenantId) { }
+}
+
+internal class DesignTimeCurrentUserService : ICurrentUserService
+{
+    public Guid? UserId { get; } = null;  // ← ATENÇÃO: Guid? (nullable)
+}
+```
+
+Regras:
+- Um factory por DbContext (CRMDbContextFactory, AuthDbContextFactory, etc.)
+- Fica em `{Modulo}.Infrastructure/Persistence/`
+- A connection string no factory é apenas para design time — runtime usa `appsettings.json`
+- `UserId` deve ser `Guid?` (nullable) para corresponder à interface `ICurrentUserService`
+- Factories existentes: `CRMDbContextFactory`, `AuthDbContextFactory`
