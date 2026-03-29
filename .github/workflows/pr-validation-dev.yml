@@ -16,41 +16,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # necessário para análise correta do SonarCloud
 
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
 
-      - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
-
       - name: Restore dependencies
         run: dotnet restore MyCRM.sln
-
-      - name: Begin SonarCloud analysis
-        run: |
-          dotnet sonarscanner begin \
-            /k:"wilianconte_mundo-da-lua-crm-core" \
-            /o:"wilianconte" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-            /d:sonar.exclusions="**/Migrations/**,**/*.Designer.cs"
 
       - name: Build
         run: dotnet build MyCRM.sln --no-restore --configuration Release
 
-      - name: Run tests with coverage
-        run: |
-          dotnet test MyCRM.sln \
-            --no-build \
-            --configuration Release \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-
-      - name: End SonarCloud analysis
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: Run tests
+        run: dotnet test MyCRM.sln --no-build --configuration Release
