@@ -70,6 +70,10 @@ builder.Services
         };
     });
 
+// Exception handler
+builder.Services.AddExceptionHandler<MyCRM.GraphQL.Middleware.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 // Modules
 builder.Services.AddCustomersApplication();
 builder.Services.AddCustomersInfrastructure(builder.Configuration);
@@ -118,6 +122,7 @@ var app = builder.Build();
 
 await app.MigrateAllDbContextsAsync();
 
+app.UseExceptionHandler();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
