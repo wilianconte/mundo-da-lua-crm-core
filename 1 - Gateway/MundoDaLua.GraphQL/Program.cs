@@ -17,19 +17,16 @@ var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? [];
 
+if (allowedOrigins.Length == 0 && !builder.Environment.IsDevelopment())
+    throw new InvalidOperationException(
+        "CORS não configurado. Defina Cors:AllowedOrigins (ou CORS__AllowedOrigins__0) antes de iniciar em produção.");
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-    {
-        if (allowedOrigins.Length > 0)
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        else
-            policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-    });
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
 // Multi-tenancy
