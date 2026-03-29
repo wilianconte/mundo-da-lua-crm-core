@@ -529,7 +529,7 @@ public sealed class PersonMutations { ... }
 Regras:
 - `[Authorize]` deve estar na **classe**, nunca verificação manual por método
 - `AuthMutations` é a única exceção — sem `[Authorize]` pois login é público
-- `.AddAuthorization()` deve ser chamado no `IRequestExecutorBuilder` (GraphQL server), além do `builder.Services.AddAuthorization()` do ASP.NET Core
+- `.AddAuthorizationCore()` deve ser chamado no `IRequestExecutorBuilder` (GraphQL server), além do `builder.Services.AddAuthorization()` do ASP.NET Core — **ATENÇÃO: usar `.AddAuthorization()` no chain do GraphQL causa erro de compilação** `'IRequestExecutorBuilder' does not contain a definition for 'AddAuthorization'`
 - `global using HotChocolate.Authorization;` já está em `GlobalUsings.cs` do projeto Gateway — não precisa de `using` por arquivo
 
 ---
@@ -588,3 +588,4 @@ curl -s -X POST http://localhost:5095/graphql \
 - usar `IHttpContextAccessor` para verificar autenticação dentro de resolver — use `[Authorize]` na classe; a verificação manual é propensa a ser esquecida em novos resolvers
 - usar `AllowIntrospection(bool)` no HC 15 — está obsoleto, usar `DisableIntrospection(!isDev)`
 - usar `IQueryResult` para tipar o resultado de `executor.ExecuteAsync()` em testes HC 15 — o tipo correto é obtido via `.ExpectOperationResult()` que retorna `IOperationResult`
+- chamar `.AddAuthorization()` no chain do `AddGraphQLServer()` — o método correto no `IRequestExecutorBuilder` é `.AddAuthorizationCore()` (extensão de `HotChocolateAuthorizeRequestExecutorBuilder`); `.AddAuthorization()` existe apenas em `IServiceCollection` (ASP.NET Core), não no builder HC
