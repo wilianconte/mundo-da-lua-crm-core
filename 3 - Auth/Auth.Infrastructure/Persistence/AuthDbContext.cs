@@ -29,11 +29,12 @@ public sealed class AuthDbContext : DbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var entry in ChangeTracker.Entries<User>())
+        foreach (var entry in ChangeTracker.Entries<IHasTenantId>())
         {
             if (entry.State == EntityState.Added)
                 entry.Entity.TenantId = _tenant.TenantId;
         }
+
         return base.SaveChangesAsync(cancellationToken);
     }
 }

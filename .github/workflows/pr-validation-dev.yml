@@ -112,7 +112,7 @@ jobs:
       - name: Begin SonarQube analysis
         run: |
           dotnet sonarscanner begin \
-            /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
+            /k:"${{ secrets.SONAR_PROJECT_KEY }}-dev" \
             /d:sonar.host.url="https://svc-sonar.mainfy.app" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
