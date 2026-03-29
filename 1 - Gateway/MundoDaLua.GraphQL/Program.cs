@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
+using MyCRM.GraphQL.Services;
+using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using Serilog;
 using System.Text;
@@ -53,6 +55,7 @@ builder.Services.AddRateLimiter(options =>
 // Multi-tenancy
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantService, HttpTenantService>();
+builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
 
 // Autenticação JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
