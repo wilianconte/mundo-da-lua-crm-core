@@ -69,6 +69,11 @@ builder.Services
     .AddFiltering()
     .AddSorting()
     .AddProjections()
+    .ModifyRequestOptions(opt =>
+    {
+        opt.IncludeExceptionDetails = builder.Environment.IsDevelopment();
+    })
+    .AllowIntrospection(builder.Environment.IsDevelopment())
     .ModifyCostOptions(o =>
     {
         o.MaxFieldCost = 100_000;
