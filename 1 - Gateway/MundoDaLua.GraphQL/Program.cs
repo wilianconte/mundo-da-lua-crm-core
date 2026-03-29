@@ -64,6 +64,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
         "Defina a variável de ambiente Jwt__Key com no mínimo 32 caracteres.");
 
 builder.Services.AddAuthorization();
+builder.Services.AddGraphQLAuthorization();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
