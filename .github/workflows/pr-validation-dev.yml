@@ -41,10 +41,7 @@ jobs:
           dotnet sonarscanner begin \
             /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
             /d:sonar.host.url="https://svc-sonar.mainfy.app" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.pullrequest.key="${{ github.event.pull_request.number }}" \
-            /d:sonar.pullrequest.branch="${{ github.head_ref }}" \
-            /d:sonar.pullrequest.base="${{ github.base_ref }}"
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Build
         run: dotnet build MyCRM.sln --no-restore --configuration Release
