@@ -1,4 +1,5 @@
 using MyCRM.Shared.Kernel.MultiTenancy;
+using Serilog.Context;
 using System.Security.Claims;
 
 namespace MyCRM.GraphQL.Middleware;
@@ -11,10 +12,17 @@ public sealed class TenantMiddleware
 
     public async Task InvokeAsync(HttpContext context, ITenantService tenantService)
     {
-        var claim = context.User.FindFirst("tenant_id");
-        if (claim is not null && Guid.TryParse(claim.Value, out var tenantId))
+        var tenantClaim = context.User.FindFirst("tenant_id");
+        if (tenantClaim is not null && Guid.TryParse(tenantClaim.Value, out var tenantId))
             tenantService.SetTenant(tenantId);
 
-        await _next(context);
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? context.User.FindFirstValue("sub");
+
+        using (LogContext.PushProperty("TenantId", tenantClaim?.Value ?? "anonymous"))
+        using (LogContext.PushProperty("UserId", userId ?? "anonymous"))
+        {
+            await _next(context);
+        }
     }
 }

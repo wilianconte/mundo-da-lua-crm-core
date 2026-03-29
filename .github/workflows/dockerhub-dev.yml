@@ -87,8 +87,16 @@ jobs:
       - name: Configurar kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Rollout restart no cluster
+      - name: Patch da imagem no deployment
+        env:
+          REGISTRY_USER: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          kubectl rollout restart deployment/mundo-da-lua-crm-core -n mundo-da-lua-crm
+          IMAGE="$REGISTRY_USER/mundo-da-lua-crm-core:dev-${GITHUB_SHA:0:7}"
+          echo "Aplicando imagem: $IMAGE"
+          kubectl set image deployment/mundo-da-lua-crm-core \
+            mundo-da-lua-crm-core=$IMAGE \
+            -n mundo-da-lua-crm
+          kubectl rollout status deployment/mundo-da-lua-crm-core \
+            -n mundo-da-lua-crm --timeout=120s

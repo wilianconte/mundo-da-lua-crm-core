@@ -9,10 +9,15 @@ using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.Shared.Kernel.MultiTenancy;
+using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) =>
+    cfg.ReadFrom.Configuration(ctx.Configuration)
+       .Enrich.FromLogContext());
 
 // CORS
 var allowedOrigins = builder.Configuration
@@ -51,6 +56,13 @@ builder.Services.AddScoped<ITenantService, HttpTenantService>();
 
 // Autenticação JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtKey = jwtSection["Key"];
+
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key não configurado ou muito curto. " +
+        "Defina a variável de ambiente Jwt__Key com no mínimo 32 caracteres.");
+
 builder.Services.AddAuthorization();
 
 builder.Services
@@ -66,7 +78,7 @@ builder.Services
             ValidIssuer = jwtSection["Issuer"],
             ValidAudience = jwtSection["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSection["Key"]!))
+                Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
@@ -103,7 +115,7 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
-    .AddAuthorizationCore()
+    .AddAuthorization()
     .AddFiltering()
     .AddSorting()
     .AddProjections()
@@ -123,6 +135,7 @@ var app = builder.Build();
 await app.MigrateAllDbContextsAsync();
 
 app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
