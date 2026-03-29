@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
+        services.AddMemoryCache();
+        services.AddSingleton<ILoginAttemptTracker, MemoryCacheLoginAttemptTracker>();
 
         return services;
     }
