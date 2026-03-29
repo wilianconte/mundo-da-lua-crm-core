@@ -1,5 +1,6 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace MyCRM.GraphQL.GraphQL.Students;
 
