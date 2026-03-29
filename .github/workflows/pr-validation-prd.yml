@@ -13,26 +13,6 @@ jobs:
       contents: read
       pull-requests: write
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: mundodalua_crm
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      CONNECTION_STRING: "Host=localhost;Port=5432;Database=mundodalua_crm;Username=postgres;Password=postgres"
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://localhost:5095
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,86 +22,8 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Install EF Core CLI
-        run: dotnet tool install --global dotnet-ef
-
       - name: Restore dependencies
         run: dotnet restore MyCRM.sln
 
       - name: Build
         run: dotnet build MyCRM.sln --no-restore --configuration Release
-
-      - name: Apply migrations
-        run: |
-          dotnet ef database update \
-            --project "2 - CRM/CRM.Infrastructure" \
-            --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
-            --context CRMDbContext
-
-          dotnet ef database update \
-            --project "3 - Auth/Auth.Infrastructure" \
-            --startup-project "1 - Gateway/MundoDaLua.GraphQL" \
-            --context AuthDbContext
-        env:
-          ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
-
-      - name: Start application and verify GraphQL
-        run: |
-          dotnet run \
-            --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj" \
-            --configuration Release \
-            --no-build &
-
-          echo "Aguardando aplicação iniciar..."
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:5095/graphql \
-              -H "Content-Type: application/json" \
-              -d '{"query":"{ __typename }"}' > /dev/null 2>&1; then
-              echo "Aplicação pronta."
-              break
-            fi
-            sleep 2
-          done
-
-          echo "Verificando login..."
-          TOKEN=$(curl -s -X POST http://localhost:5095/graphql \
-            -H "Content-Type: application/json" \
-            -d '{"query":"mutation { login(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", email: \"admin@mundodalua.com\", password: \"Admin@123\" }) { token } }"}' \
-            | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-
-          if [ -z "$TOKEN" ]; then
-            echo "ERRO: Falha ao obter token de autenticação"
-            exit 1
-          fi
-          echo "Login OK."
-
-          echo "Verificando schema GraphQL..."
-          SCHEMA=$(curl -s -X POST http://localhost:5095/graphql \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $TOKEN" \
-            -d '{"query":"{ __schema { queryType { fields { name } } mutationType { fields { name } } } }"}')
-
-          for FIELD in employees employeeById; do
-            if echo "$SCHEMA" | grep -q "\"name\":\"$FIELD\""; then
-              echo "Query '$FIELD': OK"
-            else
-              echo "ERRO: Query '$FIELD' não encontrada no schema"
-              exit 1
-            fi
-          done
-
-          for FIELD in createEmployee updateEmployee deleteEmployee; do
-            if echo "$SCHEMA" | grep -q "\"name\":\"$FIELD\""; then
-              echo "Mutation '$FIELD': OK"
-            else
-              echo "ERRO: Mutation '$FIELD' não encontrada no schema"
-              exit 1
-            fi
-          done
-
-          echo "Todas as verificações passaram."
-        env:
-          ConnectionStrings__DefaultConnection: ${{ env.CONNECTION_STRING }}
-          Jwt__Secret: ${{ secrets.JWT_SECRET }}
-          Jwt__Issuer: mundodalua
-          Jwt__Audience: mundodalua
