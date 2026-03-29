@@ -19,6 +19,8 @@ public sealed class AuthDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +28,10 @@ public sealed class AuthDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuthDbContext).Assembly);
 
         modelBuilder.Entity<User>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+        modelBuilder.Entity<Role>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+        modelBuilder.Entity<UserRole>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         base.OnModelCreating(modelBuilder);
