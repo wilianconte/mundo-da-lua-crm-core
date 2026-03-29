@@ -51,6 +51,9 @@ jobs:
           key: nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: nuget-
 
+      - name: Restore dependencies
+        run: dotnet restore MyCRM.sln
+
       - name: Build
         run: dotnet build MyCRM.sln --no-restore --configuration Release
 
@@ -94,6 +97,9 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore MyCRM.sln
 
       - name: Download coverage report
         uses: actions/download-artifact@v4
