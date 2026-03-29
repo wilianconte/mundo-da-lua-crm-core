@@ -1,4 +1,5 @@
 using MyCRM.CRM.Infrastructure.Persistence;
+using MyCRM.CRM.Domain.Entities;
 using MyCRM.Auth.Infrastructure.Persistence;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ public static class MigrationExtensions
         var sp = scope.ServiceProvider;
 
         var customersDb = sp.GetRequiredService<CRMDbContext>();
-        var authDb = sp.GetRequiredService<AuthDbContext>();
+        var authDb      = sp.GetRequiredService<AuthDbContext>();
 
         await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
         await customersDb.Database.MigrateAsync();
@@ -21,9 +22,36 @@ public static class MigrationExtensions
         await ResetMigrationsIfSchemaLostAsync(authDb, "auth", "users");
         await authDb.Database.MigrateAsync();
 
-        var tenantService = sp.GetRequiredService<ITenantService>();
+        var tenantService   = sp.GetRequiredService<ITenantService>();
+
+        // O CRM seed roda primeiro — garante que a Person do admin existe
         await DataSeeder.SeedAsync(customersDb, tenantService);
-        await AuthDataSeeder.SeedAsync(authDb, tenantService);
+
+        // Recupera o PersonId da Person admin no CRM para vinculá-la ao User admin no Auth
+        tenantService.SetTenant(DataSeeder.SeedTenantId);
+        var adminPersonId = await GetAdminPersonIdAsync(customersDb);
+
+        // O Auth seed usa o PersonId do admin para vincular User ↔ Person
+        await AuthDataSeeder.SeedAsync(authDb, tenantService, adminPersonId);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Retorna o Id da Person do administrador no CRM (busca por e-mail).
+    /// Retorna null se a Person ainda não existir (seed do CRM não rodou).
+    /// </summary>
+    private static async Task<Guid?> GetAdminPersonIdAsync(CRMDbContext crmDb)
+    {
+        const string adminEmail = "admin@mundodalua.com";
+
+        var person = await crmDb.People
+            .IgnoreQueryFilters()
+            .Where(p => p.Email == adminEmail)
+            .Select(p => (Guid?)p.Id)
+            .FirstOrDefaultAsync();
+
+        return person;
     }
 
     private static async Task ResetMigrationsIfSchemaLostAsync(DbContext db, string schema, string table)

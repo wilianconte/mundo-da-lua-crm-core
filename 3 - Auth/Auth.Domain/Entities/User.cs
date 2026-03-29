@@ -9,6 +9,9 @@ public class User : TenantEntity
     public string Name { get; private set; } = default!;
     public bool IsActive { get; private set; }
 
+    private readonly List<UserRole> _userRoles = [];
+    public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
+
     /// <summary>
     /// Referência ao registro Person do módulo CRM.
     /// Cada usuário está vinculado a exatamente uma pessoa.

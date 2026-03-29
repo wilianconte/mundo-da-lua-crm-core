@@ -12,11 +12,40 @@ public static class DataSeeder
     {
         tenantService.SetTenant(SeedTenantId);
 
+        await EnsureAdminPersonAsync(db);
         await SeedPeopleAsync(db);
         await SeedCustomersAsync(db);
         await SeedCompaniesAsync(db);
         await SeedCoursesAsync(db);
         await SeedEmployeesAsync(db);
+    }
+
+    // ── Person do Administrador ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Garante que a Person do administrador existe no CRM.
+    /// Idempotente — seguro de chamar em todo startup.
+    /// </summary>
+    private static async Task EnsureAdminPersonAsync(CRMDbContext db)
+    {
+        const string adminEmail = "admin@mundodalua.com";
+
+        var exists = await db.People
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.Email == adminEmail && p.TenantId == SeedTenantId);
+
+        if (exists)
+            return;
+
+        var adminPerson = Person.Create(
+            tenantId:      SeedTenantId,
+            fullName:      "Administrador do Sistema",
+            email:         adminEmail,
+            preferredName: "Admin",
+            notes:         "Conta administrativa do sistema — criada automaticamente pelo seed.");
+
+        await db.People.AddAsync(adminPerson);
+        await db.SaveChangesAsync();
     }
 
     // ── People ────────────────────────────────────────────────────────────────
