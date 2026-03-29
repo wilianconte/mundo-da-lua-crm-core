@@ -1,102 +1,41 @@
-# Tela de Listagem de Usuários — Guia para o Front-end
+﻿# Tela de Listagem de Usuarios - Guia para o Front-end
 
 ## Contexto
 
-O módulo de usuários expõe via GraphQL os dados de acesso/identidade da conta — não há vínculo direto com `Person` (CRM) retornado pela query de usuários. Caso precise cruzar dados de `Person`, consulte a documentação de pessoas separadamente.
+O modulo de usuarios expoe via GraphQL os dados de acesso/identidade da conta. Nao ha vinculo direto com `Person` (CRM) retornado pela query de usuarios.
 
-| Conceito | Módulo | O que representa |
+| Conceito | Modulo | O que representa |
 |---|---|---|
-| `User` | `auth` | Conta de acesso — credenciais, login, status |
-| `Person` | `crm` | Identidade humana — nome completo, CPF, contato |
+| `User` | `auth` | Conta de acesso - credenciais, login, status |
+| `Person` | `crm` | Identidade humana - nome completo, CPF, contato |
 
-> cada `User` pode estar vinculado a uma `Person` (módulo CRM) através do campo `personId` (nullable). O vínculo é feito pelo back-end — o front lê o `personId` e, se necessário, busca os dados da pessoa separadamente.
+Cada `User` pode estar vinculado a uma `Person` (modulo CRM) atraves do campo `personId` (nullable).
 
 ---
 
-## Endpoints disponíveis
+## Endpoints disponiveis
 
-| Operação | Endpoint GraphQL | Autenticação |
+| Operacao | Endpoint GraphQL | Autenticacao |
 |---|---|---|
-| Login | `mutation { login(...) }` | ❌ Anônimo |
-| Listar usuários (paginado) | `query { getUsers(...) }` | ✅ JWT obrigatório |
-| Buscar usuário por ID | `query { getUserById(...) }` | ✅ JWT obrigatório |
+| Login | `mutation { login(...) }` | Nao exige JWT |
+| Listar usuarios (paginado) | `query { users(...) }` | JWT obrigatorio |
+| Buscar usuario por ID | `query { userById(...) }` | JWT obrigatorio |
 
 ---
 
-## Como obter o token JWT (autenticação obrigatória)
+## Nome correto dos campos no GraphQL (Hot Chocolate)
 
-Todas as queries exigem autenticação. O token vem do campo `token` retornado pela mutation de login:
+O Hot Chocolate remove o prefixo `Get` dos metodos C#.
 
-```graphql
-mutation Login {
-  login(input: {
-    tenantId: "00000000-0000-0000-0000-000000000001"
-    email: "admin@mundodalua.com"
-    password: "Admin@123"
-  }) {
-    token
-    expiresAt
-    userId
-    name
-    email
-  }
-}
-```
+- Use `users` para listagem
+- Use `userById` para busca por ID
+- Nao use `getUsers`, `getUserById`, `getUser` ou `user` (campos inexistentes no schema)
 
-Enviar em **todas** as requisições seguintes:
-```
-Authorization: Bearer <token>
-```
-
-O `tenantId` está embutido no JWT — o servidor filtra os dados por tenant automaticamente, sem necessidade de header extra.
-
----
-
-## Campos disponíveis em `User`
-
-Estes são os únicos campos expostos pelo schema. Campos sensíveis são ignorados pelo servidor e nunca aparecem na resposta.
+Exemplo valido - listagem:
 
 ```graphql
-{
-  id          # Guid — identificador único do usuário
-  name        # string — nome de exibição da conta
-  email       # string — e-mail de login
-  isActive    # boolean — se o usuário está ativo
-  personId    # Guid? — id da Person vinculada no módulo CRM; null se não vinculado
-  createdAt   # DateTimeOffset — data/hora de criação (UTC)
-  updatedAt   # DateTimeOffset? — data/hora da última alteração (UTC), null se nunca alterado
-  createdBy   # Guid? — id do usuário que criou o registro
-  updatedBy   # Guid? — id do usuário que fez a última alteração
-}
-```
-
-> Campos **omitidos pelo servidor** (não existem no schema): `passwordHash`, `tenantId`, `isDeleted`, `deletedAt`.
-
----
-
-## Query de listagem de usuários
-
-A query usa **paginação cursor-based** (padrão Hot Chocolate). Suporta filtragem e ordenação declarativas.
-
-### Assinatura
-
-```graphql
-query GetUsers(
-  $first: Int
-  $after: String
-  $last: Int
-  $before: String
-  $where: UserFilterInput
-  $order: [UserSortInput!]
-) {
-  getUsers(
-    first: $first
-    after: $after
-    last: $last
-    before: $before
-    where: $where
-    order: $order
-  ) {
+query {
+  users(first: 10) {
     totalCount
     pageInfo {
       hasNextPage
@@ -119,34 +58,11 @@ query GetUsers(
 }
 ```
 
-### Variáveis — primeira página (20 itens, ordem alfabética)
-
-```json
-{
-  "first": 20,
-  "order": [{ "name": "ASC" }]
-}
-```
-
-### Variáveis — próxima página (cursor-based)
-
-```json
-{
-  "first": 20,
-  "after": "<endCursor da página anterior>",
-  "order": [{ "name": "ASC" }]
-}
-```
-
----
-
-## Query de busca por ID
-
-Retorna um único usuário ou `null` se não encontrado.
+Exemplo valido - busca por ID:
 
 ```graphql
 query GetUserById($id: UUID!) {
-  getUserById(id: $id) {
+  userById(id: $id) {
     id
     name
     email
@@ -160,50 +76,88 @@ query GetUserById($id: UUID!) {
 }
 ```
 
+---
+
+## Como obter o token JWT (autenticacao obrigatoria)
+
+Todas as queries exigem autenticacao. O token vem da mutation `login`:
+
+```graphql
+mutation Login {
+  login(input: {
+    tenantId: "00000000-0000-0000-0000-000000000001"
+    email: "admin@mundodalua.com"
+    password: "Admin@123"
+  }) {
+    token
+    expiresAt
+    userId
+    name
+    email
+  }
+}
+```
+
+Enviar em todas as requisicoes:
+
+```text
+Authorization: Bearer <token>
+```
+
+---
+
+## Campos disponiveis em `User`
+
+```graphql
+{
+  id
+  name
+  email
+  isActive
+  personId
+  createdAt
+  updatedAt
+  createdBy
+  updatedBy
+}
+```
+
+Campos omitidos pelo servidor: `passwordHash`, `tenantId`, `isDeleted`, `deletedAt`.
+
+---
+
+## Variaveis uteis para listagem
+
+Primeira pagina (20 itens, ordem alfabetica):
+
 ```json
 {
-  "id": "00000000-0000-0000-0000-000000000001"
+  "first": 20,
+  "order": [{ "name": "ASC" }]
+}
+```
+
+Proxima pagina (cursor-based):
+
+```json
+{
+  "first": 20,
+  "after": "<endCursor da pagina anterior>",
+  "order": [{ "name": "ASC" }]
 }
 ```
 
 ---
 
-## Filtros úteis (`UserFilterInput`)
-
-### Apenas usuários ativos
+## Filtros uteis (`UserFilterInput`)
 
 ```graphql
-getUsers(where: { isActive: { eq: true } })
-```
-
-### Buscar por e-mail (correspondência parcial)
-
-```graphql
-getUsers(where: { email: { contains: "mundodalua" } })
-```
-
-### Apenas usuários vinculados a uma Person
-
-```graphql
-getUsers(where: { personId: { neq: null } })
-```
-
-### Apenas usuários sem Person vinculada
-
-```graphql
-getUsers(where: { personId: { eq: null } })
-```
-
-### Buscar por nome (parcial, corresponde ao `contains`)
-
-```graphql
-getUsers(where: { name: { contains: "admin" } })
-```
-
-### Combinar filtros (AND implícito)
-
-```graphql
-getUsers(where: {
+users(where: { isActive: { eq: true } })
+users(where: { email: { contains: "mundodalua" } })
+users(where: { personId: { neq: null } })
+users(where: { personId: { eq: null } })
+users(where: { name: { contains: "admin" } })
+users(where: {
   and: [
     { isActive: { eq: true } },
     { name: { contains: "admin" } }
@@ -213,54 +167,52 @@ getUsers(where: {
 
 ---
 
-## Opções de ordenação (`UserSortInput`)
+## Ordenacao (`UserSortInput`)
 
 ```graphql
-# Alfabético crescente
-getUsers(order: [{ name: ASC }])
-
-# Mais recentes primeiro
-getUsers(order: [{ createdAt: DESC }])
-
-# Ativos primeiro, depois alfabético
-getUsers(order: [{ isActive: DESC }, { name: ASC }])
+users(order: [{ name: ASC }])
+users(order: [{ createdAt: DESC }])
+users(order: [{ isActive: DESC }, { name: ASC }])
 ```
 
 ---
 
-## Modelo de dados sugerido para a tela
+## Notas de implementacao
 
-```ts
-interface UserRow {
-  id: string                  // Guid
-  name: string
-  email: string
-  isActive: boolean
-  personId: string | null     // Guid da Person vinculada no módulo CRM
-  createdAt: string           // ISO 8601 com offset UTC
-  updatedAt: string | null
-  createdBy: string | null    // Guid do usuário auditor
-  updatedBy: string | null
-}
-
-interface UserPageResult {
-  totalCount: number
-  pageInfo: {
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-    startCursor: string
-    endCursor: string
-  }
-  nodes: UserRow[]
-}
-```
+- Autenticacao: `users` e `userById` exigem JWT (`[Authorize]`).
+- Multi-tenancy: o servidor usa o `tenantId` do JWT para filtrar dados.
+- Soft delete: registros com `isDeleted = true` nao aparecem na resposta.
+- Paginacao: preferir `first` (forward paging).
+- Projecao: solicitar apenas os campos necessarios.
 
 ---
 
-## Notas de implementação
+## Validacao de testes - consulta de users
 
-- **Autenticação**: todas as queries (`getUsers`, `getUserById`) possuem o atributo `[Authorize]` — requisições sem JWT válido retornam erro `401`.
-- **Multi-tenancy**: o servidor utiliza o `tenantId` embutido no JWT para filtrar os usuários automaticamente. O front não precisa (nem deve) enviar o tenant em headers ou variáveis de query.
-- **Soft delete**: registros com `isDeleted = true` são filtrados automaticamente pelo EF Core e **nunca aparecem** nas respostas — não é necessário filtrar no front.
-- **Paginação**: prefira sempre enviar `first` (forward paging). Evite `last`/`before` a não ser que a UX exija navegação reversa explícita.
-- **Projeção**: a query suporta `[UseProjection]` — solicite apenas os campos que a tela realmente precisa para evitar over-fetching.
+Execucao em **2026-03-29**:
+
+```bash
+dotnet test "4 - Tests/UnitTests/MyCRM.UnitTests.csproj" --filter "FullyQualifiedName~UserQuery" --nologo
+```
+
+Resultado:
+
+- Passed: 19
+- Failed: 0
+- Skipped: 0
+
+Cenarios validados:
+
+- Schema expoe `users` e `userById`
+- `getUsers`, `getUserById`, `getUser` e `user` retornam erro de campo inexistente
+- Campos de `User` permitidos e bloqueio de campos sensiveis
+- Autorizacao obrigatoria
+- Listagem com base vazia
+- Listagem com usuarios seedados
+- Filtro por `isActive`
+- Filtro por `email contains`
+- Paginacao com `first` + `pageInfo.hasNextPage`
+- Busca por ID existente
+- Busca por ID inexistente retorna `null`
+- Soft delete nao retorna na listagem
+

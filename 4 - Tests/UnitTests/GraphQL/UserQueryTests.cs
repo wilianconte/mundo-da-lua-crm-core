@@ -1,9 +1,5 @@
 using System.Security.Claims;
-using HotChocolate;
-using HotChocolate.Authorization;
-using HotChocolate.Data;
 using HotChocolate.Execution;
-using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyCRM.Auth.Domain.Entities;
@@ -16,19 +12,13 @@ using NSubstitute;
 namespace MyCRM.UnitTests.GraphQL;
 
 /// <summary>
-/// Testes de schema e execução da query <c>getUsers</c>.
-///
-/// Estratégia:
-///   - AuthDbContext configurado com EF InMemory (sem banco real).
-///   - Stubs de ITenantService e ICurrentUserService.
-///   - Schema Hot Chocolate construído com os tipos reais (UserQueries + UserObjectType).
-///   - Claims de usuário autenticado injetadas via RequestContext para os testes que exigem auth.
+/// Schema and execution tests for User queries using the real production naming:
+/// - users
+/// - userById
 /// </summary>
 public sealed class UserQueryTests
 {
     private static readonly Guid TenantId = new("00000000-0000-0000-0000-000000000001");
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static AuthDbContext CreateInMemoryDbContext()
     {
@@ -39,7 +29,7 @@ public sealed class UserQueryTests
         currentUserSvc.UserId.Returns((Guid?)null);
 
         var options = new DbContextOptionsBuilder<AuthDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) // isolado por teste
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
         return new AuthDbContext(options, tenantSvc, currentUserSvc);
@@ -50,30 +40,26 @@ public sealed class UserQueryTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddAuthorization();
-        services.AddSingleton(db);  // injeta o db já criado
+        services.AddSingleton(db);
 
-        var executor = await services
+        return await services
             .AddGraphQLServer()
             .AddQueryType()
-            .AddTypeExtension<TestUserQueries>()
+            .AddTypeExtension<UserQueries>()
             .AddType<UserObjectType>()
             .AddAuthorization()
             .AddFiltering()
             .AddSorting()
             .AddProjections()
             .BuildRequestExecutorAsync();
-
-        return executor;
     }
 
-    /// <summary>Cria um ClaimsPrincipal autenticado (simula JWT válido).</summary>
     private static ClaimsPrincipal AuthenticatedUser(Guid userId) =>
         new(new ClaimsIdentity(
         [
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
         ], authenticationType: "Bearer"));
 
-    /// <summary>Monta uma requisição GraphQL com usuário autenticado injetado via GlobalState.</summary>
     private static IOperationRequest BuildRequest(string query, Guid? userId = null)
     {
         var principal = AuthenticatedUser(userId ?? Guid.NewGuid());
@@ -91,30 +77,37 @@ public sealed class UserQueryTests
         return user;
     }
 
-    // ── Schema tests ──────────────────────────────────────────────────────────
-
     [Fact]
-    public async Task Schema_GetUsers_FieldExistsOnQueryType()
+    public async Task Schema_Users_FieldExistsOnQueryType()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
-        var schema = executor.Schema;
-        var queryType = schema.QueryType;
-
-        Assert.True(queryType.Fields.ContainsField("getUsers"),
-            "O campo 'getUsers' deve existir no tipo Query");
+        Assert.True(executor.Schema.QueryType.Fields.ContainsField("users"),
+            "The field 'users' must exist on Query");
     }
 
     [Fact]
-    public async Task Schema_GetUserById_FieldExistsOnQueryType()
+    public async Task Schema_UserById_FieldExistsOnQueryType()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
-        var schema = executor.Schema;
-        Assert.True(schema.QueryType.Fields.ContainsField("getUserById"),
-            "O campo 'getUserById' deve existir no tipo Query");
+        Assert.True(executor.Schema.QueryType.Fields.ContainsField("userById"),
+            "The field 'userById' must exist on Query");
+    }
+
+    [Fact]
+    public async Task Schema_GetPrefixedUserFields_DoNotExistOnQueryType()
+    {
+        await using var db = CreateInMemoryDbContext();
+        var executor = await BuildExecutorAsync(db);
+        var queryType = executor.Schema.QueryType;
+
+        Assert.False(queryType.Fields.ContainsField("getUsers"));
+        Assert.False(queryType.Fields.ContainsField("getUserById"));
+        Assert.False(queryType.Fields.ContainsField("getUser"));
+        Assert.False(queryType.Fields.ContainsField("user"));
     }
 
     [Fact]
@@ -134,35 +127,29 @@ public sealed class UserQueryTests
 
         foreach (var field in expectedFields)
             Assert.True(userType.Fields.ContainsField(field),
-                $"O campo '{field}' deve estar exposto no tipo User");
+                $"The field '{field}' must be exposed on User");
     }
 
     [Fact]
-    public async Task Schema_UserType_DoesNotExposePasswordHash()
+    public async Task Schema_UserType_DoesNotExposeSensitiveFields()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
-
         var userType = executor.Schema.GetType<HotChocolate.Types.ObjectType>("User");
 
-        Assert.False(userType.Fields.ContainsField("passwordHash"),
-            "passwordHash NÃO deve ser exposto no schema");
-        Assert.False(userType.Fields.ContainsField("tenantId"),
-            "tenantId NÃO deve ser exposto no schema");
-        Assert.False(userType.Fields.ContainsField("isDeleted"),
-            "isDeleted NÃO deve ser exposto no schema");
+        Assert.False(userType.Fields.ContainsField("passwordHash"));
+        Assert.False(userType.Fields.ContainsField("tenantId"));
+        Assert.False(userType.Fields.ContainsField("isDeleted"));
     }
 
-    // ── Authorization tests ───────────────────────────────────────────────────
-
     [Fact]
-    public async Task GetUsers_WithoutToken_ReturnsAuthorizationError()
+    public async Task Users_WithoutToken_ReturnsAuthorizationError()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
         var result = (await executor.ExecuteAsync(
-            "{ getUsers { nodes { id name email isActive } } }"))
+            "{ users { nodes { id name email isActive } } }"))
             .ExpectOperationResult();
 
         Assert.NotNull(result.Errors);
@@ -170,102 +157,96 @@ public sealed class UserQueryTests
     }
 
     [Fact]
-    public async Task GetUserById_WithoutToken_ReturnsAuthorizationError()
+    public async Task UserById_WithoutToken_ReturnsAuthorizationError()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
         var result = (await executor.ExecuteAsync(
-            $"{{ getUserById(id: \"{Guid.NewGuid()}\") {{ id name }} }}"))
+            $"{{ userById(id: \"{Guid.NewGuid()}\") {{ id name }} }}"))
             .ExpectOperationResult();
 
         Assert.NotNull(result.Errors);
         Assert.NotEmpty(result.Errors);
     }
 
-    // ── Execution tests (com usuário autenticado) ─────────────────────────────
-
     [Fact]
-    public async Task GetUsers_WithToken_EmptyDatabase_ReturnsEmptyNodes()
+    public async Task Users_WithToken_EmptyDatabase_ReturnsEmptyNodes()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers { totalCount nodes { id name email isActive } } }");
-
+        var request = BuildRequest("{ users { totalCount nodes { id name email isActive } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.NotNull(getUsers);
-        Assert.Equal(0, Convert.ToInt32(getUsers["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(users);
+        Assert.Equal(0, Convert.ToInt32(users["totalCount"]));
     }
 
     [Fact]
-    public async Task GetUsers_WithToken_ReturnsSeededUsers()
+    public async Task Users_WithToken_ReturnsSeededUsers()
     {
         await using var db = CreateInMemoryDbContext();
 
         var alice = CreateUser("Alice Silva", "alice@test.com");
-        var bob   = CreateUser("Bob Santos",  "bob@test.com");
+        var bob = CreateUser("Bob Santos", "bob@test.com");
         await db.Users.AddRangeAsync(alice, bob);
         await db.SaveChangesAsync();
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers(first: 10) { totalCount nodes { id name email isActive } } }");
-
+        var request = BuildRequest("{ users(first: 10) { totalCount nodes { id name email isActive } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.Equal(2, Convert.ToInt32(getUsers!["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.Equal(2, Convert.ToInt32(users!["totalCount"]));
     }
 
     [Fact]
-    public async Task GetUsers_FilterByIsActive_ReturnsOnlyActiveUsers()
+    public async Task Users_FilterByIsActive_ReturnsOnlyActiveUsers()
     {
         await using var db = CreateInMemoryDbContext();
 
-        var active   = CreateUser("Ativo",    "ativo@test.com",   isActive: true);
-        var inactive = CreateUser("Inativo",  "inativo@test.com", isActive: false);
+        var active = CreateUser("Ativo", "ativo@test.com", isActive: true);
+        var inactive = CreateUser("Inativo", "inativo@test.com", isActive: false);
         await db.Users.AddRangeAsync(active, inactive);
         await db.SaveChangesAsync();
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers(where: { isActive: { eq: true } }) { totalCount nodes { id isActive } } }");
-
+        var request = BuildRequest("{ users(where: { isActive: { eq: true } }) { totalCount nodes { id isActive } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.Equal(1, Convert.ToInt32(getUsers!["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.Equal(1, Convert.ToInt32(users!["totalCount"]));
     }
 
     [Fact]
-    public async Task GetUsers_FilterByEmailContains_ReturnsMatchingUsers()
+    public async Task Users_FilterByEmailContains_ReturnsMatchingUsers()
     {
         await using var db = CreateInMemoryDbContext();
 
-        var userA = CreateUser("Alice",  "alice@mundodalua.com");
+        var userA = CreateUser("Alice", "alice@mundodalua.com");
         var userB = CreateUser("Carlos", "carlos@gmail.com");
         await db.Users.AddRangeAsync(userA, userB);
         await db.SaveChangesAsync();
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers(where: { email: { contains: \"mundodalua\" } }) { totalCount nodes { email } } }");
-
+        var request = BuildRequest("{ users(where: { email: { contains: \"mundodalua\" } }) { totalCount nodes { email } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.Equal(1, Convert.ToInt32(getUsers!["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.Equal(1, Convert.ToInt32(users!["totalCount"]));
     }
 
     [Fact]
-    public async Task GetUsers_Pagination_FirstReturnsLimitedResults()
+    public async Task Users_Pagination_FirstReturnsLimitedResults()
     {
         await using var db = CreateInMemoryDbContext();
 
@@ -275,23 +256,22 @@ public sealed class UserQueryTests
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers(first: 3) { totalCount pageInfo { hasNextPage } nodes { id } } }");
-
+        var request = BuildRequest("{ users(first: 3) { totalCount pageInfo { hasNextPage } nodes { id } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.Equal(5, Convert.ToInt32(getUsers!["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.Equal(5, Convert.ToInt32(users!["totalCount"]));
 
-        var pageInfo = getUsers["pageInfo"] as IReadOnlyDictionary<string, object?>;
+        var pageInfo = users["pageInfo"] as IReadOnlyDictionary<string, object?>;
         Assert.True((bool)pageInfo!["hasNextPage"]!);
 
-        var nodes = getUsers["nodes"] as IReadOnlyList<object?>;
+        var nodes = users["nodes"] as IReadOnlyList<object?>;
         Assert.Equal(3, nodes!.Count);
     }
 
     [Fact]
-    public async Task GetUserById_WithToken_ExistingUser_ReturnsUser()
+    public async Task UserById_WithToken_ExistingUser_ReturnsUser()
     {
         await using var db = CreateInMemoryDbContext();
 
@@ -301,38 +281,36 @@ public sealed class UserQueryTests
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest($"{{ getUserById(id: \"{user.Id}\") {{ id name email isActive }} }}");
-
+        var request = BuildRequest($"{{ userById(id: \"{user.Id}\") {{ id name email isActive }} }}");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var found = result.Data!["getUserById"] as IReadOnlyDictionary<string, object?>;
+        var found = result.Data!["userById"] as IReadOnlyDictionary<string, object?>;
         Assert.NotNull(found);
         Assert.Equal(user.Id.ToString(), found["id"]?.ToString());
         Assert.Equal("Alice", found["name"]?.ToString());
     }
 
     [Fact]
-    public async Task GetUserById_WithToken_NonExistingUser_ReturnsNull()
+    public async Task UserById_WithToken_NonExistingUser_ReturnsNull()
     {
         await using var db = CreateInMemoryDbContext();
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest($"{{ getUserById(id: \"{Guid.NewGuid()}\") {{ id name }} }}");
-
+        var request = BuildRequest($"{{ userById(id: \"{Guid.NewGuid()}\") {{ id name }} }}");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        Assert.Null(result.Data!["getUserById"]);
+        Assert.Null(result.Data!["userById"]);
     }
 
     [Fact]
-    public async Task GetUsers_SoftDeleted_AreNotReturned()
+    public async Task Users_SoftDeleted_AreNotReturned()
     {
         await using var db = CreateInMemoryDbContext();
 
-        var active  = CreateUser("Ativo",   "ativo@test.com");
-        var deleted = CreateUser("Deletado","del@test.com");
+        var active = CreateUser("Ativo", "ativo@test.com");
+        var deleted = CreateUser("Deletado", "del@test.com");
         deleted.SoftDelete();
 
         await db.Users.AddRangeAsync(active, deleted);
@@ -340,36 +318,63 @@ public sealed class UserQueryTests
 
         var executor = await BuildExecutorAsync(db);
 
-        var request = BuildRequest("{ getUsers { totalCount nodes { id name } } }");
-
+        var request = BuildRequest("{ users { totalCount nodes { id name } } }");
         var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
 
         Assert.Null(result.Errors);
-        var getUsers = result.Data!["getUsers"] as IReadOnlyDictionary<string, object?>;
-        Assert.Equal(1, Convert.ToInt32(getUsers!["totalCount"]));
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        Assert.Equal(1, Convert.ToInt32(users!["totalCount"]));
     }
-}
 
-/// <summary>
-/// Wrapper de teste para UserQueries: usa [ExtendObjectType] explícito em vez de [QueryType]
-/// para funcionar corretamente em setup de executor isolado (sem assembly-scan automático).
-/// Os nomes dos campos são explicitamente definidos para corresponder ao schema de produção.
-/// </summary>
-[ExtendObjectType(OperationTypeNames.Query)]
-[Authorize]
-internal sealed class TestUserQueries
-{
-    [GraphQLName("getUsers")]
-    [UsePaging(IncludeTotalCount = true)]
-    [UseProjection]
-    [UseFiltering]
-    [UseSorting]
-    public IQueryable<User> GetUsers([Service] AuthDbContext db) =>
-        db.Users.AsNoTracking();
+    [Fact]
+    public async Task GetUsers_WithToken_ReturnsFieldNotFoundError()
+    {
+        await using var db = CreateInMemoryDbContext();
+        var executor = await BuildExecutorAsync(db);
 
-    [GraphQLName("getUserById")]
-    [UseFirstOrDefault]
-    [UseProjection]
-    public IQueryable<User> GetUserById(Guid id, [Service] AuthDbContext db) =>
-        db.Users.AsNoTracking().Where(x => x.Id == id);
+        var request = BuildRequest("{ getUsers(first: 10) { totalCount nodes { id } } }");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.NotNull(result.Errors);
+        Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task GetUserById_WithToken_ReturnsFieldNotFoundError()
+    {
+        await using var db = CreateInMemoryDbContext();
+        var executor = await BuildExecutorAsync(db);
+
+        var request = BuildRequest($"{{ getUserById(id: \"{Guid.NewGuid()}\") {{ id name }} }}");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.NotNull(result.Errors);
+        Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task GetUser_WithToken_ReturnsFieldNotFoundError()
+    {
+        await using var db = CreateInMemoryDbContext();
+        var executor = await BuildExecutorAsync(db);
+
+        var request = BuildRequest($"{{ getUser(id: \"{Guid.NewGuid()}\") {{ id name }} }}");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.NotNull(result.Errors);
+        Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task User_WithToken_ReturnsFieldNotFoundError()
+    {
+        await using var db = CreateInMemoryDbContext();
+        var executor = await BuildExecutorAsync(db);
+
+        var request = BuildRequest($"{{ user(id: \"{Guid.NewGuid()}\") {{ id name }} }}");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.NotNull(result.Errors);
+        Assert.NotEmpty(result.Errors);
+    }
 }
