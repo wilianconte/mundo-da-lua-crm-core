@@ -17,7 +17,7 @@
 - [ ] Regra de negócio está no domínio/aplicação, não no resolver?
 - [ ] Isolamento de tenant garantido?
 - [ ] Validação com FluentValidation?
-- [ ] Autorização explícita?
+- [ ] Autorização explícita? (`[Authorize]` na classe — nunca verificação manual via IHttpContextAccessor)
 - [ ] `AsNoTracking()` nas leituras?
 - [ ] Soft delete (nunca hard delete)?
 - [ ] Repositório registrado no `DependencyInjection.cs`?

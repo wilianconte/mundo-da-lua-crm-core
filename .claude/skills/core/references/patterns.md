@@ -515,17 +515,22 @@ Modelo de permissão:
 ```
 Exemplos: `crm:person:read`, `crm:person:write`, `escola:aluno:read`, `clinica:agenda:write`
 
-**Padrão atual nos resolvers:** verificação inline via `IHttpContextAccessor`:
+**Padrão obrigatório nos resolvers:** `[Authorize]` no nível da classe via `HotChocolate.Authorization`:
 ```csharp
-if (httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated != true)
-    throw new GraphQLException(
-        ErrorBuilder.New()
-            .SetMessage("Não autorizado. Faça login para continuar.")
-            .SetCode("AUTH_NOT_AUTHORIZED")
-            .Build());
+[Authorize]
+[QueryType]
+public sealed class PersonQueries { ... }
+
+[Authorize]
+[MutationType]
+public sealed class PersonMutations { ... }
 ```
 
-> Nota: O atributo `[Authorize(Policy = "...")]` está documentado como padrão ideal mas o codebase atual usa verificação inline. Ao criar novos resolvers, siga o padrão já existente no módulo.
+Regras:
+- `[Authorize]` deve estar na **classe**, nunca verificação manual por método
+- `AuthMutations` é a única exceção — sem `[Authorize]` pois login é público
+- `.AddAuthorization()` deve ser chamado no `IRequestExecutorBuilder` (GraphQL server), além do `builder.Services.AddAuthorization()` do ASP.NET Core
+- `global using HotChocolate.Authorization;` já está em `GlobalUsings.cs` do projeto Gateway — não precisa de `using` por arquivo
 
 ---
 
@@ -580,3 +585,6 @@ curl -s -X POST http://localhost:5095/graphql \
 - criar classe `[QueryType]` ou `[MutationType]` sem registrá-la no `Program.cs` via `.AddTypeExtension<>()` — o campo simplesmente não aparece no schema GraphQL e o erro retornado é `"The field X does not exist on the type Query/Mutation"`, não um erro de compilação
 - alterar entidade, relacionamento ou configuração EF sem criar e aplicar migration — o banco fica dessincronizado com o modelo e o próximo `database update` detecta mudanças pendentes impedindo o deploy
 - usar `using Microsoft.EntityFrameworkCore` em projetos `Application` — só `Infrastructure` deve referenciar EF Core diretamente; handlers devem usar abstrações de repositório
+- usar `IHttpContextAccessor` para verificar autenticação dentro de resolver — use `[Authorize]` na classe; a verificação manual é propensa a ser esquecida em novos resolvers
+- usar `AllowIntrospection(bool)` no HC 15 — está obsoleto, usar `DisableIntrospection(!isDev)`
+- usar `IQueryResult` para tipar o resultado de `executor.ExecuteAsync()` em testes HC 15 — o tipo correto é obtido via `.ExpectOperationResult()` que retorna `IOperationResult`
