@@ -165,7 +165,7 @@ Shared.Kernel ← todos
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
 | `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses`, `employees` | CRM |
-| `auth` | `AuthDbContext` | `users` | Auth |
+| `auth` | `AuthDbContext` | `users`, `roles`, `user_roles` | Auth |
 
 Schemas planejados (ainda não implementados):
 
@@ -193,4 +193,7 @@ Leia `references/entities.md` para documentação completa de cada entidade.
 | `Course` | `crm.courses` | Oferta educacional estruturada |
 | `StudentCourse` | `crm.student_courses` | Matrícula aluno↔curso |
 | `Employee` | `crm.employees` | Papel de `Person` no contexto de RH |
+| `User` | `auth.users` | Usuário do sistema com credenciais de autenticação |
+| `Role` | `auth.roles` | Papel de acesso com permissões granulares |
+| `UserRole` | `auth.user_roles` | Atribuição usuário↔role (many-to-many) |
 | `Customer` | `crm.customers` | Entidade legada de CRM genérico |
