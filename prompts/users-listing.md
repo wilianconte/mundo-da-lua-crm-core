@@ -1,41 +1,43 @@
-﻿# Tela de Listagem de Usuarios - Guia para o Front-end
+# Listagem de Usuarios - Guia para o Front-end
 
-## Contexto
-
-O modulo de usuarios expoe via GraphQL os dados de acesso/identidade da conta. Nao ha vinculo direto com `Person` (CRM) retornado pela query de usuarios.
-
-| Conceito | Modulo | O que representa |
-|---|---|---|
-| `User` | `auth` | Conta de acesso - credenciais, login, status |
-| `Person` | `crm` | Identidade humana - nome completo, CPF, contato |
-
-Cada `User` pode estar vinculado a uma `Person` (modulo CRM) atraves do campo `personId` (nullable).
+> **Data:** 2026-03-30
+> **Modulo:** Auth
+> **Autenticacao:** JWT obrigatorio
 
 ---
 
-## Endpoints disponiveis
+## Operacoes disponiveis
 
-| Operacao | Endpoint GraphQL | Autenticacao |
+| Operacao | Tipo | Descricao |
 |---|---|---|
-| Login | `mutation { login(...) }` | Nao exige JWT |
-| Listar usuarios (paginado) | `query { users(...) }` | JWT obrigatorio |
-| Buscar usuario por ID | `query { userById(...) }` | JWT obrigatorio |
+| `users` | Query | Listagem paginada com filtros e ordenacao |
+| `userById` | Query | Detalhe de um usuario por ID |
 
 ---
 
-## Nome correto dos campos no GraphQL (Hot Chocolate)
+## Queries
 
-O Hot Chocolate remove o prefixo `Get` dos metodos C#.
+### `users`
 
-- Use `users` para listagem
-- Use `userById` para busca por ID
-- Nao use `getUsers`, `getUserById`, `getUser` ou `user` (campos inexistentes no schema)
-
-Exemplo valido - listagem:
+Paginacao baseada em cursor (Relay-style). Suporta filtros e ordenacao.
 
 ```graphql
-query {
-  users(first: 10) {
+query GetUsers(
+  $first: Int
+  $after: String
+  $last: Int
+  $before: String
+  $where: UserFilterInput
+  $order: [UserSortInput!]
+) {
+  users(
+    first: $first
+    after: $after
+    last: $last
+    before: $before
+    where: $where
+    order: $order
+  ) {
     totalCount
     pageInfo {
       hasNextPage
@@ -58,7 +60,45 @@ query {
 }
 ```
 
-Exemplo valido - busca por ID:
+**Exemplo — primeira pagina**
+
+```json
+{
+  "first": 20,
+  "order": [{ "name": "ASC" }]
+}
+```
+
+**Exemplo — proxima pagina**
+
+```json
+{
+  "first": 20,
+  "after": "<endCursor da pagina anterior>",
+  "order": [{ "name": "ASC" }]
+}
+```
+
+**Exemplo — com filtro**
+
+```json
+{
+  "first": 20,
+  "where": {
+    "and": [
+      { "isActive": { "eq": true } },
+      { "name": { "contains": "maria" } }
+    ]
+  },
+  "order": [{ "name": "ASC" }]
+}
+```
+
+---
+
+### `userById`
+
+Retorna um unico usuario ou `null` se nao encontrado.
 
 ```graphql
 query GetUserById($id: UUID!) {
@@ -76,143 +116,119 @@ query GetUserById($id: UUID!) {
 }
 ```
 
+**Exemplo**
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000001"
+}
+```
+
 ---
 
-## Como obter o token JWT (autenticacao obrigatoria)
+## Campos disponiveis
 
-Todas as queries exigem autenticacao. O token vem da mutation `login`:
+| Campo | Tipo | Descricao |
+|---|---|---|
+| `id` | UUID | Identificador do usuario |
+| `name` | String | Nome completo |
+| `email` | String | E-mail de acesso |
+| `isActive` | Boolean | Se o usuario esta ativo |
+| `personId` | UUID | ID da pessoa vinculada (nullable) |
+| `createdAt` | DateTime | Data de criacao |
+| `updatedAt` | DateTime | Data da ultima atualizacao |
+| `createdBy` | String | Quem criou |
+| `updatedBy` | String | Quem atualizou por ultimo |
 
-```graphql
-mutation Login {
-  login(input: {
-    tenantId: "00000000-0000-0000-0000-000000000001"
-    email: "admin@mundodalua.com"
-    password: "Admin@123"
-  }) {
-    token
-    expiresAt
-    userId
-    name
-    email
+> `passwordHash`, `tenantId`, `isDeleted` e `deletedAt` nunca sao retornados — nao solicitar.
+
+---
+
+## Paginacao
+
+A API usa paginacao por cursor (Relay Connection). **Nao usar offset/page/skip.**
+
+> **Limite maximo:** `first` e `last` aceitam no maximo **50** itens por pagina. Valores acima retornam erro `HC0051`.
+
+| Campo | Uso |
+|---|---|
+| `first` + `after` | Avancar paginas |
+| `last` + `before` | Retroceder paginas |
+| `totalCount` | Total de registros para exibir contador |
+| `pageInfo.hasNextPage` | Habilitar/desabilitar botao "Proxima" |
+| `pageInfo.hasPreviousPage` | Habilitar/desabilitar botao "Anterior" |
+| `pageInfo.endCursor` | Cursor para proxima pagina |
+| `pageInfo.startCursor` | Cursor para pagina anterior |
+
+---
+
+## Filtros (`UserFilterInput`)
+
+| Filtro | Exemplo |
+|---|---|
+| Apenas ativos | `{ "isActive": { "eq": true } }` |
+| Por nome | `{ "name": { "contains": "joao" } }` |
+| Por e-mail | `{ "email": { "contains": "mundodalua" } }` |
+| Com pessoa vinculada | `{ "personId": { "neq": null } }` |
+| Sem pessoa vinculada | `{ "personId": { "eq": null } }` |
+
+Combinacao com `and`:
+
+```json
+{
+  "where": {
+    "and": [
+      { "isActive": { "eq": true } },
+      { "name": { "contains": "admin" } }
+    ]
   }
 }
-```
-
-Enviar em todas as requisicoes:
-
-```text
-Authorization: Bearer <token>
-```
-
----
-
-## Campos disponiveis em `User`
-
-```graphql
-{
-  id
-  name
-  email
-  isActive
-  personId
-  createdAt
-  updatedAt
-  createdBy
-  updatedBy
-}
-```
-
-Campos omitidos pelo servidor: `passwordHash`, `tenantId`, `isDeleted`, `deletedAt`.
-
----
-
-## Variaveis uteis para listagem
-
-Primeira pagina (20 itens, ordem alfabetica):
-
-```json
-{
-  "first": 20,
-  "order": [{ "name": "ASC" }]
-}
-```
-
-Proxima pagina (cursor-based):
-
-```json
-{
-  "first": 20,
-  "after": "<endCursor da pagina anterior>",
-  "order": [{ "name": "ASC" }]
-}
-```
-
----
-
-## Filtros uteis (`UserFilterInput`)
-
-```graphql
-users(where: { isActive: { eq: true } })
-users(where: { email: { contains: "mundodalua" } })
-users(where: { personId: { neq: null } })
-users(where: { personId: { eq: null } })
-users(where: { name: { contains: "admin" } })
-users(where: {
-  and: [
-    { isActive: { eq: true } },
-    { name: { contains: "admin" } }
-  ]
-})
 ```
 
 ---
 
 ## Ordenacao (`UserSortInput`)
 
-```graphql
-users(order: [{ name: ASC }])
-users(order: [{ createdAt: DESC }])
-users(order: [{ isActive: DESC }, { name: ASC }])
+Campos ordenaveis: `name`, `email`, `createdAt`, `updatedAt`, `isActive`.
+
+```json
+{ "order": [{ "createdAt": "DESC" }] }
+{ "order": [{ "isActive": "DESC" }, { "name": "ASC" }] }
 ```
 
 ---
 
-## Notas de implementacao
+## Notas importantes
 
-- Autenticacao: `users` e `userById` exigem JWT (`[Authorize]`).
-- Multi-tenancy: o servidor usa o `tenantId` do JWT para filtrar dados.
-- Soft delete: registros com `isDeleted = true` nao aparecem na resposta.
-- Paginacao: preferir `first` (forward paging).
-- Projecao: solicitar apenas os campos necessarios.
+- O servidor filtra automaticamente por `tenantId` do JWT — nao enviar `tenantId` nas queries.
+- Registros excluidos (`isDeleted = true`) nunca aparecem na listagem.
+- Os nomes corretos das queries sao `users` e `userById`. Nomes como `getUsers`, `getUserById` ou `user` nao existem no schema e retornam erro.
+- Solicitar apenas os campos necessarios para a tela (projecao GraphQL).
 
 ---
 
-## Validacao de testes - consulta de users
+## Tratamento de erro
 
-Execucao em **2026-03-29**:
-
-```bash
-dotnet test "4 - Tests/UnitTests/MyCRM.UnitTests.csproj" --filter "FullyQualifiedName~UserQuery" --nologo
+```json
+{
+  "errors": [
+    {
+      "message": "mensagem tecnica",
+      "extensions": { "code": "CODIGO_ERRO" }
+    }
+  ]
+}
 ```
 
-Resultado:
+Mapear `extensions.code` para mensagens amigaveis. Exibir `message` apenas em logs internos.
 
-- Passed: 19
-- Failed: 0
-- Skipped: 0
+---
 
-Cenarios validados:
+## Fluxo de UX
 
-- Schema expoe `users` e `userById`
-- `getUsers`, `getUserById`, `getUser` e `user` retornam erro de campo inexistente
-- Campos de `User` permitidos e bloqueio de campos sensiveis
-- Autorizacao obrigatoria
-- Listagem com base vazia
-- Listagem com usuarios seedados
-- Filtro por `isActive`
-- Filtro por `email contains`
-- Paginacao com `first` + `pageInfo.hasNextPage`
-- Busca por ID existente
-- Busca por ID inexistente retorna `null`
-- Soft delete nao retorna na listagem
-
+1. Front carrega a primeira pagina com `first: 20` ao montar a tela.
+2. Exibe `totalCount` como contador de resultados.
+3. Botao "Proxima" ativo quando `pageInfo.hasNextPage = true`; envia `after: endCursor`.
+4. Botao "Anterior" ativo quando `pageInfo.hasPreviousPage = true`; envia `before: startCursor` com `last`.
+5. Ao alterar filtro ou ordenacao, resetar cursor (remover `after`/`before`) e buscar a primeira pagina novamente.
+6. `userById` e usado para abrir detalhe ou pre-preencher formulario de edicao.
