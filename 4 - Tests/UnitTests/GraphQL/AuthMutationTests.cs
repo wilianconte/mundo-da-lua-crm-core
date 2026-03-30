@@ -3,6 +3,8 @@ using HotChocolate.Execution;
 using HotChocolate.Types;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using MyCRM.Auth.Application.Commands.Login;
+using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth;
@@ -55,6 +57,88 @@ public sealed class AuthMutationTests
         var executor = await BuildExecutorAsync(sender, mediator);
 
         Assert.True(executor.Schema.MutationType!.Fields.ContainsField("createUser"));
+    }
+
+    [Fact]
+    public async Task Schema_Login_FieldExistsOnMutationType()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        Assert.True(executor.Schema.MutationType!.Fields.ContainsField("login"));
+    }
+
+    [Fact]
+    public async Task Schema_RefreshToken_FieldExistsOnMutationType()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        Assert.True(executor.Schema.MutationType!.Fields.ContainsField("refreshToken"));
+    }
+
+    [Fact]
+    public async Task RefreshToken_ValidToken_ReturnsLoginDto()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+
+        var dto = new LoginDto(
+            Token: "new-access-token",
+            ExpiresAt: DateTimeOffset.UtcNow.AddHours(1),
+            UserId: Guid.NewGuid(),
+            Name: "Test User",
+            Email: "test@test.com",
+            RefreshToken: "new-refresh-token",
+            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30));
+
+        mediator.Send(Arg.Any<RefreshTokenCommand>(), Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result<LoginDto>.Success(dto));
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            "mutation { refreshToken(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", refreshToken: \"some-token\" }) { token refreshToken email } }",
+            authenticated: false))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var data = result.Data!["refreshToken"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(data);
+        Assert.Equal("new-access-token", data["token"]?.ToString());
+        Assert.Equal("new-refresh-token", data["refreshToken"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Login_ValidCredentials_ReturnsLoginDtoWithRefreshToken()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+
+        var dto = new LoginDto(
+            Token: "access-token",
+            ExpiresAt: DateTimeOffset.UtcNow.AddHours(1),
+            UserId: Guid.NewGuid(),
+            Name: "Test User",
+            Email: "test@test.com",
+            RefreshToken: "refresh-token-value",
+            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30));
+
+        mediator.Send(Arg.Any<LoginCommand>(), Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result<LoginDto>.Success(dto));
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            "mutation { login(input: { tenantId: \"00000000-0000-0000-0000-000000000001\", email: \"test@test.com\", password: \"Password123!\" }) { token refreshToken expiresAt refreshTokenExpiresAt } }",
+            authenticated: false))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var data = result.Data!["login"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(data);
+        Assert.Equal("access-token", data["token"]?.ToString());
+        Assert.Equal("refresh-token-value", data["refreshToken"]?.ToString());
     }
 
     [Fact]
