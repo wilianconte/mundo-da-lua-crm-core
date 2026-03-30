@@ -55,9 +55,6 @@ public sealed class Student : TenantEntity
 
     public string? Notes { get; private set; }
 
-    /// <summary>Academic observations relevant to teachers or school staff.</summary>
-    public string? AcademicObservation { get; private set; }
-
     // ── Navigation ────────────────────────────────────────────────────────────
 
     /// <summary>Guardian relationships for this student.</summary>
@@ -81,8 +78,7 @@ public sealed class Student : TenantEntity
         Guid? unitId = null,
         string? classGroup = null,
         DateOnly? startDate = null,
-        string? notes = null,
-        string? academicObservation = null)
+        string? notes = null)
     {
         if (personId == Guid.Empty)
             throw new ArgumentException("PersonId is required.", nameof(personId));
@@ -100,7 +96,6 @@ public sealed class Student : TenantEntity
             StartDate           = startDate,
             Status              = StudentStatus.Active,
             Notes               = notes?.Trim(),
-            AcademicObservation = academicObservation?.Trim(),
         };
     }
 
@@ -114,8 +109,7 @@ public sealed class Student : TenantEntity
         Guid? unitId,
         string? classGroup,
         DateOnly? startDate,
-        string? notes,
-        string? academicObservation)
+        string? notes)
     {
         RegistrationNumber  = registrationNumber?.Trim();
         SchoolName          = schoolName?.Trim();
@@ -125,7 +119,6 @@ public sealed class Student : TenantEntity
         ClassGroup          = classGroup?.Trim();
         StartDate           = startDate;
         Notes               = notes?.Trim();
-        AcademicObservation = academicObservation?.Trim();
         Touch();
     }
 

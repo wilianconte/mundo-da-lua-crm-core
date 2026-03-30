@@ -15,7 +15,6 @@ public record StudentDto(
     DateOnly? StartDate,
     StudentStatus Status,
     string? Notes,
-    string? AcademicObservation,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt
 );

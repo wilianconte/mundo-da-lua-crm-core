@@ -9,6 +9,5 @@ public record CreateStudentInput(
     Guid? UnitId,
     string? ClassGroup,
     DateOnly? StartDate,
-    string? Notes,
-    string? AcademicObservation
+    string? Notes
 );
