@@ -1,31 +1,24 @@
-﻿# Cadastro de Usuario - Guia para o Front-end
+# Cadastro de Usuario - Guia para o Front-end
 
-## Objetivo
-
-Orientar a implementacao da tela de cadastro de usuario com o contrato GraphQL ja disponivel no backend.
-
----
-
-## Status atual do backend (2026-03-29)
-
-Mutation de cadastro ja publicada em Auth:
-
-- `createUser` (autenticada)
-- `login` (anonima)
-
-Queries relacionadas:
-
-- `users` (listagem paginada)
-- `userById` (detalhe por ID)
-
-Arquivos de referencia:
-
-- `1 - Gateway/MundoDaLua.GraphQL/GraphQL/Auth/AuthMutations.cs`
-- `1 - Gateway/MundoDaLua.GraphQL/GraphQL/Auth/Inputs/CreateUserInput.cs`
+> **Data:** 2026-03-29
+> **Modulo:** Auth
+> **Autenticacao:** JWT obrigatorio
 
 ---
 
-## Mutation de cadastro
+## Operacoes disponiveis
+
+| Operacao | Tipo | Descricao |
+|---|---|---|
+| `createUser` | Mutation | Cria um novo usuario |
+| `users` | Query | Listagem paginada de usuarios |
+| `userById` | Query | Detalhe de usuario por ID |
+
+---
+
+## Mutations
+
+### `createUser`
 
 ```graphql
 mutation CreateUser($input: CreateUserInput!) {
@@ -43,7 +36,7 @@ mutation CreateUser($input: CreateUserInput!) {
 }
 ```
 
-## Input
+**Input**
 
 ```graphql
 input CreateUserInput {
@@ -54,7 +47,7 @@ input CreateUserInput {
 }
 ```
 
-## Exemplo de variaveis
+**Exemplo**
 
 ```json
 {
@@ -67,53 +60,48 @@ input CreateUserInput {
 }
 ```
 
+**Erros de negocio**
+
+| Codigo | Quando ocorre |
+|---|---|
+| `USER_EMAIL_DUPLICATE` | Ja existe usuario com esse e-mail no tenant |
+| `USER_PERSON_ALREADY_LINKED` | `personId` ja vinculado a outro usuario |
+| `VALIDATION_ERROR` | Campos invalidos |
+
 ---
 
-## Autenticacao
+## Validacoes no front
 
-`createUser` exige JWT valido:
+| Campo | Regra |
+|---|---|
+| `name` | Obrigatorio, maximo 200 caracteres |
+| `email` | Obrigatorio, formato valido, maximo 254 caracteres |
+| `password` | Obrigatorio, maximo 128 caracteres, sempre mascarada |
+| `personId` | Opcional, selecionar de uma busca de pessoas |
 
-```text
-Authorization: Bearer <token>
+---
+
+## Tratamento de erro
+
+```json
+{
+  "errors": [
+    {
+      "message": "mensagem tecnica",
+      "extensions": { "code": "CODIGO_ERRO" }
+    }
+  ]
+}
 ```
 
----
-
-## Regras de negocio retornadas pelo backend
-
-- `USER_EMAIL_DUPLICATE`: ja existe usuario com esse email no tenant.
-- `USER_PERSON_ALREADY_LINKED`: `personId` ja vinculado a outro usuario no tenant.
-- `VALIDATION_ERROR`: erro de validacao (campos invalidos).
+Mapear `extensions.code` para mensagens amigaveis. Exibir `message` apenas em logs internos.
 
 ---
 
-## Validacoes recomendadas no front
-
-- `name`: obrigatorio, maximo 200.
-- `email`: obrigatorio, formato valido, maximo 254.
-- `password`: obrigatoria, maximo 128, sempre mascarada.
-- `personId`: opcional.
-
----
-
-## Tratamento de erro no front
-
-Padrao GraphQL atual:
-
-- mensagem em `errors[].message`
-- codigo em `errors[].extensions.code`
-
-Recomendacao:
-
-- mapear `extensions.code` para mensagens amigaveis
-- manter mensagem tecnica somente em logs internos
-
----
-
-## Fluxo sugerido de UX
+## Fluxo de UX
 
 1. Usuario preenche Nome, E-mail, Senha e Pessoa (opcional).
-2. Front valida campos obrigatorios.
-3. Front envia mutation `createUser`.
-4. Em sucesso, redireciona para listagem `users` e mostra confirmacao.
-5. Em erro, mostra feedback por codigo de negocio.
+2. Front valida os campos obrigatorios.
+3. Front envia `createUser`.
+4. Em sucesso: redireciona para a listagem de usuarios e exibe confirmacao.
+5. Em erro: exibe feedback por codigo de negocio.
