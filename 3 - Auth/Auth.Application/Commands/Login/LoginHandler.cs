@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Domain.Repositories;
+using DomainRefreshToken = MyCRM.Auth.Domain.Entities.RefreshToken;
 using MyCRM.Shared.Kernel.Results;
 
 namespace MyCRM.Auth.Application.Commands.Login;
@@ -12,6 +13,8 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginDto
     private readonly IUserRepository _repo;
     private readonly IPasswordHasher _hasher;
     private readonly ITokenGenerator _tokenGen;
+    private readonly IRefreshTokenGenerator _refreshGen;
+    private readonly IRefreshTokenRepository _refreshRepo;
     private readonly ILoginAttemptTracker _tracker;
     private readonly ILogger<LoginHandler> _logger;
 
@@ -19,12 +22,16 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginDto
         IUserRepository repo,
         IPasswordHasher hasher,
         ITokenGenerator tokenGen,
+        IRefreshTokenGenerator refreshGen,
+        IRefreshTokenRepository refreshRepo,
         ILoginAttemptTracker tracker,
         ILogger<LoginHandler> logger)
     {
         _repo = repo;
         _hasher = hasher;
         _tokenGen = tokenGen;
+        _refreshGen = refreshGen;
+        _refreshRepo = refreshRepo;
         _tracker = tracker;
         _logger = logger;
     }
@@ -55,11 +62,24 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginDto
             return Result<LoginDto>.Failure("USER_INACTIVE", "Usuário inativo.");
 
         _tracker.ResetFailures(lockoutKey);
-        var (token, expiresAt) = _tokenGen.Generate(user);
+
+        var (accessToken, accessExpiresAt) = _tokenGen.Generate(user);
+        var (rawRefreshToken, tokenHash, refreshExpiresAt) = _refreshGen.Generate();
+
+        var refreshToken = DomainRefreshToken.Create(user.Id, user.TenantId, tokenHash, refreshExpiresAt);
+        await _refreshRepo.AddAsync(refreshToken, ct);
+        await _refreshRepo.SaveChangesAsync(ct);
 
         _logger.LogInformation("Audit: login bem-sucedido. TenantId={TenantId} UserId={UserId}",
             request.TenantId, user.Id);
 
-        return Result<LoginDto>.Success(new LoginDto(token, expiresAt, user.Id, user.Name, user.Email));
+        return Result<LoginDto>.Success(new LoginDto(
+            accessToken,
+            accessExpiresAt,
+            user.Id,
+            user.Name,
+            user.Email,
+            rawRefreshToken,
+            refreshExpiresAt));
     }
 }

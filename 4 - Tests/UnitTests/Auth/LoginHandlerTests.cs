@@ -12,17 +12,19 @@ public sealed class LoginHandlerTests
     private readonly IUserRepository _repo = Substitute.For<IUserRepository>();
     private readonly IPasswordHasher _hasher = Substitute.For<IPasswordHasher>();
     private readonly ITokenGenerator _tokenGen = Substitute.For<ITokenGenerator>();
+    private readonly IRefreshTokenGenerator _refreshGen = Substitute.For<IRefreshTokenGenerator>();
+    private readonly IRefreshTokenRepository _refreshRepo = Substitute.For<IRefreshTokenRepository>();
     private readonly ILoginAttemptTracker _tracker = Substitute.For<ILoginAttemptTracker>();
     private readonly LoginHandler _handler;
 
     private static readonly Guid TenantId = Guid.NewGuid();
     private const string Email = "user@test.com";
     private const string Password = "Password123!";
-    private const string LockoutKey = $"login:{nameof(TenantId)}:{Email}";
 
     public LoginHandlerTests()
     {
-        _handler = new LoginHandler(_repo, _hasher, _tokenGen, _tracker,
+        _refreshGen.Generate().Returns(("rawToken", "hashValue", DateTimeOffset.UtcNow.AddDays(30)));
+        _handler = new LoginHandler(_repo, _hasher, _tokenGen, _refreshGen, _refreshRepo, _tracker,
             NullLogger<LoginHandler>.Instance);
     }
 
