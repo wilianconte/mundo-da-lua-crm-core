@@ -43,8 +43,7 @@ public sealed class UpdateStudentHandler : IRequestHandler<UpdateStudentCommand,
             unitId:              request.UnitId,
             classGroup:          request.ClassGroup,
             startDate:           request.StartDate,
-            notes:               request.Notes,
-            academicObservation: request.AcademicObservation);
+            notes:               request.Notes);
 
         _repository.Update(student);
         await _repository.SaveChangesAsync(ct);

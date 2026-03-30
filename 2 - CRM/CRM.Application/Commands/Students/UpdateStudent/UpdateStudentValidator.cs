@@ -32,9 +32,5 @@ public sealed class UpdateStudentValidator : AbstractValidator<UpdateStudentComm
         RuleFor(x => x.Notes)
             .MaximumLength(2000)
             .When(x => x.Notes is not null);
-
-        RuleFor(x => x.AcademicObservation)
-            .MaximumLength(2000)
-            .When(x => x.AcademicObservation is not null);
     }
 }

@@ -30,7 +30,6 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         // Status & Notes
         builder.Property(x => x.Status).IsRequired().HasConversion<int>();
         builder.Property(x => x.Notes).HasMaxLength(2000);
-        builder.Property(x => x.AcademicObservation).HasMaxLength(2000);
 
         // Audit
         builder.Property(x => x.CreatedAt).IsRequired();

@@ -60,8 +60,7 @@ public sealed class CreateStudentHandler : IRequestHandler<CreateStudentCommand,
             unitId:              request.UnitId,
             classGroup:          request.ClassGroup,
             startDate:           request.StartDate,
-            notes:               request.Notes,
-            academicObservation: request.AcademicObservation);
+            notes:               request.Notes);
 
         await _repository.AddAsync(student, ct);
         await _repository.SaveChangesAsync(ct);

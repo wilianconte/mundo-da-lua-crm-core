@@ -26,8 +26,7 @@ public sealed class StudentMutations
             input.UnitId,
             input.ClassGroup,
             input.StartDate,
-            input.Notes,
-            input.AcademicObservation), ct);
+            input.Notes), ct);
 
         return result.IsSuccess
             ? new StudentPayload(result.Value!)
@@ -54,8 +53,7 @@ public sealed class StudentMutations
             input.UnitId,
             input.ClassGroup,
             input.StartDate,
-            input.Notes,
-            input.AcademicObservation), ct);
+            input.Notes), ct);
 
         return result.IsSuccess
             ? new StudentPayload(result.Value!)
