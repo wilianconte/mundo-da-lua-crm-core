@@ -35,11 +35,4 @@ public sealed class StudentRepository : IStudentRepository
             x => x.TenantId == tenantId
               && x.PersonId == personId
               && (excludeId == null || x.Id != excludeId), ct);
-
-    public async Task<bool> RegistrationNumberExistsAsync(
-        Guid tenantId, string registrationNumber, Guid? excludeId = null, CancellationToken ct = default) =>
-        await _db.Students.AnyAsync(
-            x => x.TenantId == tenantId
-              && x.RegistrationNumber == registrationNumber.Trim()
-              && (excludeId == null || x.Id != excludeId), ct);
 }

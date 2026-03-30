@@ -20,13 +20,6 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
             .HasForeignKey(x => x.PersonId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Enrollment fields
-        builder.Property(x => x.RegistrationNumber).HasMaxLength(50);
-        builder.Property(x => x.SchoolName).HasMaxLength(200);
-        builder.Property(x => x.GradeOrClass).HasMaxLength(100);
-        builder.Property(x => x.EnrollmentType).HasMaxLength(100);
-        builder.Property(x => x.ClassGroup).HasMaxLength(50);
-
         // Status & Notes
         builder.Property(x => x.Status).IsRequired().HasConversion<int>();
         builder.Property(x => x.Notes).HasMaxLength(2000);
@@ -39,11 +32,6 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.HasIndex(x => new { x.TenantId, x.PersonId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
-
-        // Unique: registration number per tenant (optional field)
-        builder.HasIndex(x => new { x.TenantId, x.RegistrationNumber })
-            .IsUnique()
-            .HasFilter("\"RegistrationNumber\" IS NOT NULL");
 
         builder.HasIndex(x => new { x.TenantId, x.Status });
         builder.HasIndex(x => x.IsDeleted);
