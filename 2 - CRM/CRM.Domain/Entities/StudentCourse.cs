@@ -174,4 +174,58 @@ public sealed class StudentCourse : TenantEntity
         Status = StudentCourseStatus.Suspended;
         Touch();
     }
+
+    /// <summary>
+    /// Changes enrollment status enforcing lifecycle transition rules.
+    /// Automatically sets lifecycle dates when appropriate.
+    /// </summary>
+    public void ChangeStatus(StudentCourseStatus newStatus)
+    {
+        if (newStatus == Status)
+            return;
+
+        if (!CanTransitionTo(newStatus))
+            throw new InvalidOperationException(
+                $"Invalid enrollment status transition: {Status} -> {newStatus}.");
+
+        switch (newStatus)
+        {
+            case StudentCourseStatus.Completed:
+                Complete();
+                break;
+            case StudentCourseStatus.Cancelled:
+                Cancel();
+                break;
+            default:
+                Status = newStatus;
+                Touch();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Transition matrix:
+    /// Pending   -> Active, Cancelled, Suspended, Completed
+    /// Active    -> Suspended, Completed, Cancelled
+    /// Suspended -> Active, Completed, Cancelled
+    /// Completed -> (terminal)
+    /// Cancelled -> (terminal)
+    /// </summary>
+    private bool CanTransitionTo(StudentCourseStatus newStatus) =>
+        Status switch
+        {
+            StudentCourseStatus.Pending => newStatus is StudentCourseStatus.Active
+                or StudentCourseStatus.Cancelled
+                or StudentCourseStatus.Suspended
+                or StudentCourseStatus.Completed,
+            StudentCourseStatus.Active => newStatus is StudentCourseStatus.Suspended
+                or StudentCourseStatus.Completed
+                or StudentCourseStatus.Cancelled,
+            StudentCourseStatus.Suspended => newStatus is StudentCourseStatus.Active
+                or StudentCourseStatus.Completed
+                or StudentCourseStatus.Cancelled,
+            StudentCourseStatus.Completed => false,
+            StudentCourseStatus.Cancelled => false,
+            _ => false
+        };
 }

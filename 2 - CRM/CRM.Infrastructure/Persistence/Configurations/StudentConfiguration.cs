@@ -20,8 +20,7 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
             .HasForeignKey(x => x.PersonId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Status & Notes
-        builder.Property(x => x.Status).IsRequired().HasConversion<int>();
+        // Notes
         builder.Property(x => x.Notes).HasMaxLength(2000);
 
         // Audit
@@ -33,7 +32,6 @@ public sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
-        builder.HasIndex(x => new { x.TenantId, x.Status });
         builder.HasIndex(x => x.IsDeleted);
     }
 }

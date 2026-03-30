@@ -54,7 +54,8 @@ public sealed class StudentCourseMutations
             input.Shift,
             input.ScheduleDescription,
             input.UnitId,
-            input.Notes), ct);
+            input.Notes,
+            input.Status), ct);
 
         return result.IsSuccess
             ? new StudentCoursePayload(result.Value!)

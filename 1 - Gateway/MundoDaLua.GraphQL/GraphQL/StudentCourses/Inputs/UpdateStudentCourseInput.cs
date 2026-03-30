@@ -1,3 +1,5 @@
+using MyCRM.CRM.Domain.Entities;
+
 namespace MyCRM.GraphQL.GraphQL.StudentCourses.Inputs;
 
 public record UpdateStudentCourseInput(
@@ -8,5 +10,6 @@ public record UpdateStudentCourseInput(
     string? Shift,
     string? ScheduleDescription,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    StudentCourseStatus? Status
 );

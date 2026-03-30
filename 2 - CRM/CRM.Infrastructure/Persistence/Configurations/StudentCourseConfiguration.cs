@@ -16,7 +16,7 @@ public sealed class StudentCourseConfiguration : IEntityTypeConfiguration<Studen
         // Student reference
         builder.Property(x => x.StudentId).IsRequired();
         builder.HasOne(x => x.Student)
-            .WithMany()
+            .WithMany(s => s.Courses)
             .HasForeignKey(x => x.StudentId)
             .OnDelete(DeleteBehavior.Restrict);
 

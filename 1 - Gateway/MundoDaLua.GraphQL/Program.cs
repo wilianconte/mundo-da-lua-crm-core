@@ -9,6 +9,8 @@ using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.GraphQL.Services;
+using MyCRM.GraphQL.GraphQL.Enums;
+using MyCRM.GraphQL.GraphQL.Students.Types;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using Serilog;
@@ -111,6 +113,11 @@ builder.Services
     .AddType<MyCRM.GraphQL.GraphQL.Auth.UserObjectType>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentObjectTypeExtension>()
+    .AddType<StudentEnrollmentStatusType>()
+    .AddType<StudentCourseStatusType>()
+    .AddType<StudentFilterType>()
+    .AddType<StudentSortType>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Courses.CourseQueries>()
