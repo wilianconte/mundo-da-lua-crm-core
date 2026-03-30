@@ -1,4 +1,5 @@
 using MyCRM.CRM.Application.DTOs;
+using MyCRM.CRM.Domain.Entities;
 using MediatR;
 using MyCRM.Shared.Kernel.Results;
 
@@ -13,5 +14,6 @@ public record UpdateStudentCourseCommand(
     string? Shift,
     string? ScheduleDescription,
     Guid? UnitId,
-    string? Notes
+    string? Notes,
+    StudentCourseStatus? Status
 ) : IRequest<Result<StudentCourseDto>>;

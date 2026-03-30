@@ -1,5 +1,3 @@
-using MyCRM.CRM.Domain.Entities;
-
 namespace MyCRM.CRM.Application.DTOs;
 
 public record StudentDto(
@@ -7,7 +5,7 @@ public record StudentDto(
     Guid TenantId,
     Guid PersonId,
     Guid? UnitId,
-    StudentStatus Status,
+    StudentEnrollmentStatus EnrollmentStatus,
     string? Notes,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt

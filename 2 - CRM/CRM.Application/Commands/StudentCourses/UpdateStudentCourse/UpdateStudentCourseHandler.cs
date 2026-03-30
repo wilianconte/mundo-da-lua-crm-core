@@ -19,14 +19,28 @@ public sealed class UpdateStudentCourseHandler : IRequestHandler<UpdateStudentCo
             return Result<StudentCourseDto>.Failure("STUDENT_COURSE_NOT_FOUND", "Enrollment not found.");
 
         enrollment.UpdateInfo(
-            enrollmentDate:     request.EnrollmentDate,
-            startDate:          request.StartDate,
-            endDate:            request.EndDate,
-            classGroup:         request.ClassGroup,
-            shift:              request.Shift,
+            enrollmentDate:      request.EnrollmentDate,
+            startDate:           request.StartDate,
+            endDate:             request.EndDate,
+            classGroup:          request.ClassGroup,
+            shift:               request.Shift,
             scheduleDescription: request.ScheduleDescription,
-            unitId:             request.UnitId,
-            notes:              request.Notes);
+            unitId:              request.UnitId,
+            notes:               request.Notes);
+
+        if (request.Status.HasValue)
+        {
+            try
+            {
+                enrollment.ChangeStatus(request.Status.Value);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Result<StudentCourseDto>.Failure(
+                    "STUDENT_COURSE_STATUS_TRANSITION_INVALID",
+                    ex.Message);
+            }
+        }
 
         _repository.Update(enrollment);
         await _repository.SaveChangesAsync(ct);
