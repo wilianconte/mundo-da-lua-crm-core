@@ -39,28 +39,11 @@ public sealed class CreateStudentHandler : IRequestHandler<CreateStudentCommand,
                 "STUDENT_DUPLICATE_PERSON",
                 "This person is already registered as a student.");
 
-        // Prevent duplicate registration numbers
-        if (request.RegistrationNumber is not null)
-        {
-            var regExists = await _repository.RegistrationNumberExistsAsync(
-                _tenant.TenantId, request.RegistrationNumber, ct: ct);
-            if (regExists)
-                return Result<StudentDto>.Failure(
-                    "STUDENT_REGISTRATION_NUMBER_DUPLICATE",
-                    "A student with this registration number already exists.");
-        }
-
         var student = Student.Create(
-            tenantId:            _tenant.TenantId,
-            personId:            request.PersonId,
-            registrationNumber:  request.RegistrationNumber,
-            schoolName:          request.SchoolName,
-            gradeOrClass:        request.GradeOrClass,
-            enrollmentType:      request.EnrollmentType,
-            unitId:              request.UnitId,
-            classGroup:          request.ClassGroup,
-            startDate:           request.StartDate,
-            notes:               request.Notes);
+            tenantId: _tenant.TenantId,
+            personId: request.PersonId,
+            unitId:   request.UnitId,
+            notes:    request.Notes);
 
         await _repository.AddAsync(student, ct);
         await _repository.SaveChangesAsync(ct);

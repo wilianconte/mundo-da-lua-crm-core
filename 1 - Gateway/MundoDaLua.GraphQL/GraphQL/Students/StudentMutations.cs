@@ -19,13 +19,7 @@ public sealed class StudentMutations
     {
         var result = await sender.Send(new CreateStudentCommand(
             input.PersonId,
-            input.RegistrationNumber,
-            input.SchoolName,
-            input.GradeOrClass,
-            input.EnrollmentType,
             input.UnitId,
-            input.ClassGroup,
-            input.StartDate,
             input.Notes), ct);
 
         return result.IsSuccess
@@ -46,13 +40,7 @@ public sealed class StudentMutations
     {
         var result = await sender.Send(new UpdateStudentCommand(
             id,
-            input.RegistrationNumber,
-            input.SchoolName,
-            input.GradeOrClass,
-            input.EnrollmentType,
             input.UnitId,
-            input.ClassGroup,
-            input.StartDate,
             input.Notes), ct);
 
         return result.IsSuccess
