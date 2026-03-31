@@ -20,6 +20,7 @@ public sealed class RoleObjectType : ObjectType<Role>
         descriptor.Field(x => x.UpdatedBy);
         descriptor
             .Field("permissions")
+            .Type<NonNullType<ListType<NonNullType<PermissionDtoType>>>>()
             .Resolve(async context =>
             {
                 var db = context.Service<AuthDbContext>();
