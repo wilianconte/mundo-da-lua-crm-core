@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
+using MyCRM.Auth.Application.Commands.Users.DeleteUser;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth;
 using NSubstitute;
@@ -139,6 +140,57 @@ public sealed class AuthMutationTests
         Assert.NotNull(data);
         Assert.Equal("access-token", data["token"]?.ToString());
         Assert.Equal("refresh-token-value", data["refreshToken"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Schema_DeleteUser_FieldExistsOnMutationType()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        Assert.True(executor.Schema.MutationType!.Fields.ContainsField("deleteUser"));
+    }
+
+    [Fact]
+    public async Task DeleteUser_WithToken_ReturnsTrue()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+
+        sender.Send(Arg.Any<DeleteUserCommand>(), Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result.Success());
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+        var userId = Guid.NewGuid();
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ deleteUser(id: \"{userId}\") }}",
+            authenticated: true))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        Assert.Equal(true, result.Data!["deleteUser"]);
+    }
+
+    [Fact]
+    public async Task DeleteUser_UserNotFound_ReturnsGraphQLError()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+
+        sender.Send(Arg.Any<DeleteUserCommand>(), Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result.Failure("USER_NOT_FOUND", "User not found."));
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+        var userId = Guid.NewGuid();
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ deleteUser(id: \"{userId}\") }}",
+            authenticated: true))).ExpectOperationResult();
+
+        Assert.NotNull(result.Errors);
+        Assert.NotEmpty(result.Errors);
+        Assert.Equal("USER_NOT_FOUND", result.Errors[0].Extensions?["code"]?.ToString());
     }
 
     [Fact]
