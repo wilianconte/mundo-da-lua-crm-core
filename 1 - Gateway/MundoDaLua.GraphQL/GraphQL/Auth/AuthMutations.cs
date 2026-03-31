@@ -1,5 +1,6 @@
 using MediatR;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
+using MyCRM.Auth.Application.Commands.Users.DeleteUser;
 using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.DTOs;
@@ -24,6 +25,20 @@ public class AuthMutations
 
         return result.IsSuccess
             ? result.Value!
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    [Authorize]
+    public async Task<bool> DeleteUserAsync(
+        Guid id,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new DeleteUserCommand(id), ct);
+
+        return result.IsSuccess
+            ? true
             : throw new GraphQLException(result.Errors.Select(e =>
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
