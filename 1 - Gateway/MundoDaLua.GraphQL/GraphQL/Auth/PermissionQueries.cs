@@ -3,10 +3,10 @@ using MyCRM.Auth.Application.Queries.GetMyPermissions;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
-[Authorize]
 [QueryType]
 public sealed class PermissionQueries
 {
+    [Authorize]
     public async Task<IReadOnlyList<string>> GetMyPermissionsAsync(
         [Service] ISender sender,
         CancellationToken ct)
