@@ -518,12 +518,16 @@ Exemplos atuais: `students:read`, `students:create`, `student_guardians:update`,
 Padrao obrigatorio nos resolvers:
 - usar policy explicita com `[Authorize(Policy = SystemPermissions.Xxx)]` para operacoes de negocio;
 - evitar `[Authorize]` generico em recursos sensiveis.
+- em classes `[QueryType]` e `[MutationType]`, aplicar `[Authorize]` nos metodos/campos e nao no nivel da classe para evitar propagacao indevida para todo o tipo raiz.
 
 Exemplo:
 ```csharp
-[Authorize(Policy = SystemPermissions.StudentsRead)]
 [QueryType]
-public sealed class StudentQueries { ... }
+public sealed class StudentQueries
+{
+    [Authorize(Policy = SystemPermissions.StudentsRead)]
+    public IQueryable<Student> GetStudents(...) { ... }
+}
 
 [MutationType]
 public sealed class StudentMutations
@@ -592,7 +596,8 @@ curl -s -X POST http://localhost:5095/graphql \
 - criar classe `[QueryType]` ou `[MutationType]` sem registrá-la no `Program.cs` via `.AddTypeExtension<>()` — o campo simplesmente não aparece no schema GraphQL e o erro retornado é `"The field X does not exist on the type Query/Mutation"`, não um erro de compilação
 - alterar entidade, relacionamento ou configuração EF sem criar e aplicar migration — o banco fica dessincronizado com o modelo e o próximo `database update` detecta mudanças pendentes impedindo o deploy
 - usar `using Microsoft.EntityFrameworkCore` em projetos `Application` — só `Infrastructure` deve referenciar EF Core diretamente; handlers devem usar abstrações de repositório
-- usar `IHttpContextAccessor` para verificar autenticação dentro de resolver — use `[Authorize]` na classe; a verificação manual é propensa a ser esquecida em novos resolvers
+- usar `IHttpContextAccessor` para verificar autenticacao dentro de resolver — use `[Authorize]` no metodo do resolver/campo; a verificacao manual e propensa a ser esquecida em novos resolvers
+- usar `[Authorize(Policy = ...)]` no nivel da classe em `QueryType`/`MutationType` para proteger campo especifico — aplicar no metodo do campo para evitar contaminar o tipo raiz inteiro
 - usar `AllowIntrospection(bool)` no HC 15 — está obsoleto, usar `DisableIntrospection(!isDev)`
 - usar `IQueryResult` para tipar o resultado de `executor.ExecuteAsync()` em testes HC 15 — o tipo correto é obtido via `.ExpectOperationResult()` que retorna `IOperationResult`
 - chamar `.AddAuthorization()` no chain do `AddGraphQLServer()` — o método correto no `IRequestExecutorBuilder` é `.AddAuthorizationCore()` (extensão de `HotChocolateAuthorizeRequestExecutorBuilder`); `.AddAuthorization()` existe apenas em `IServiceCollection` (ASP.NET Core), não no builder HC

@@ -5,10 +5,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.People;
 
-[Authorize(Policy = SystemPermissions.PeopleRead)]
 [QueryType]
 public sealed class PersonQueries
 {
+    [Authorize(Policy = SystemPermissions.PeopleRead)]
     [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
@@ -16,6 +16,7 @@ public sealed class PersonQueries
     public IQueryable<Person> GetPeople([Service] CRMDbContext db) =>
         db.People.AsNoTracking();
 
+    [Authorize(Policy = SystemPermissions.PeopleRead)]
     [UseFirstOrDefault]
     [UseProjection]
     public IQueryable<Person> GetPersonById(Guid id, [Service] CRMDbContext db) =>
