@@ -1,10 +1,11 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Customers;
 
-[Authorize]
+[Authorize(Policy = SystemPermissions.CustomersRead)]
 [QueryType]
 public class CustomerQueries
 {

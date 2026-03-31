@@ -2,12 +2,14 @@ using MediatR;
 using MyCRM.Auth.Application.Commands.Roles.CreateRole;
 using MyCRM.Auth.Application.Commands.Roles.DeleteRole;
 using MyCRM.Auth.Application.Commands.Roles.UpdateRole;
+using MyCRM.Auth.Application.Commands.Roles.UpdateRolePermissions;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
-[Authorize]
+[Authorize(Policy = SystemPermissions.RolesManage)]
 [MutationType]
 public sealed class RoleMutations
 {
@@ -50,4 +52,19 @@ public sealed class RoleMutations
             : throw new GraphQLException(result.Errors.Select(e =>
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
+
+    public async Task<RoleDto> UpdateRolePermissionsAsync(
+        Guid roleId,
+        IReadOnlyList<Guid> permissionIds,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new UpdateRolePermissionsCommand(roleId, permissionIds), ct);
+
+        return result.IsSuccess
+            ? result.Value!
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
 }
+

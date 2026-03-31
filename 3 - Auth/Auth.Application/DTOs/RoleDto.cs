@@ -1,12 +1,13 @@
 namespace MyCRM.Auth.Application.DTOs;
 
 public record RoleDto(
-    Guid Id,
-    Guid TenantId,
-    string Name,
+    Guid    Id,
+    Guid    TenantId,
+    string  Name,
     string? Description,
-    bool IsActive,
-    DateTimeOffset CreatedAt,
+    bool    IsActive,
+    IReadOnlyList<PermissionDto> Permissions,
+    DateTimeOffset  CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid? CreatedBy,
-    Guid? UpdatedBy);
+    Guid?           CreatedBy,
+    Guid?           UpdatedBy);

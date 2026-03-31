@@ -3,14 +3,17 @@ using MyCRM.CRM.Infrastructure;
 using MyCRM.Auth.Application;
 using MyCRM.Auth.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using MyCRM.GraphQL.Authorization;
 using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.GraphQL.Services;
 using MyCRM.GraphQL.GraphQL.Enums;
 using MyCRM.GraphQL.GraphQL.Students.Types;
+using MyCRM.Shared.Kernel;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using Serilog;
@@ -68,7 +71,13 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
         "Jwt:Key não configurado ou muito curto. " +
         "Defina a variável de ambiente Jwt__Key com no mínimo 32 caracteres.");
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(opts =>
+{
+    foreach (var (name, _) in SystemPermissions.All)
+        opts.AddPolicy(name, b => b.Requirements.Add(new PermissionRequirement(name)));
+});
+
+builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -114,6 +123,7 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Auth.RoleObjectType>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.PermissionQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentObjectTypeExtension>()

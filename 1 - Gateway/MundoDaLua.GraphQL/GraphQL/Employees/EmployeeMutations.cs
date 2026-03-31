@@ -3,13 +3,14 @@ using MyCRM.CRM.Application.Commands.Employees.CreateEmployee;
 using MyCRM.CRM.Application.Commands.Employees.UpdateEmployee;
 using MyCRM.CRM.Application.Commands.Employees.DeleteEmployee;
 using MyCRM.GraphQL.GraphQL.Employees.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Employees;
 
-[Authorize]
 [MutationType]
 public sealed class EmployeeMutations
 {
+    [Authorize(Policy = SystemPermissions.EmployeesCreate)]
     public async Task<EmployeePayload> CreateEmployeeAsync(
         CreateEmployeeInput input,
         [Service] ISender sender,
@@ -40,6 +41,7 @@ public sealed class EmployeeMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.EmployeesUpdate)]
     public async Task<EmployeePayload> UpdateEmployeeAsync(
         Guid id,
         UpdateEmployeeInput input,
@@ -71,6 +73,7 @@ public sealed class EmployeeMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.EmployeesDelete)]
     public async Task<bool> DeleteEmployeeAsync(
         Guid id,
         [Service] ISender sender,

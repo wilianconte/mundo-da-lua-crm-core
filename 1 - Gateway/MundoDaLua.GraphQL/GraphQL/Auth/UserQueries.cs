@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using MyCRM.Auth.Domain.Entities;
 using MyCRM.Auth.Infrastructure.Persistence;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
-[Authorize]
+[Authorize(Policy = SystemPermissions.UsersManage)]
 [QueryType]
 public sealed class UserQueries
 {

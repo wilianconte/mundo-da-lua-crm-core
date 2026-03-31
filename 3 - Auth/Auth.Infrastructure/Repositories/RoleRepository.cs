@@ -53,4 +53,17 @@ public sealed class RoleRepository : IRoleRepository
             .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
             .ToListAsync(ct);
     }
+
+    public async Task<Role?> GetByIdWithPermissionsAsync(Guid id, CancellationToken ct = default) =>
+        await _db.Roles
+            .Include(r => r.RolePermissions)
+                .ThenInclude(rp => rp.Permission)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task<IReadOnlyList<Guid>> GetUserIdsByRoleIdAsync(Guid roleId, CancellationToken ct = default) =>
+        await _db.UserRoles
+            .AsNoTracking()
+            .Where(ur => ur.RoleId == roleId)
+            .Select(ur => ur.UserId)
+            .ToListAsync(ct);
 }

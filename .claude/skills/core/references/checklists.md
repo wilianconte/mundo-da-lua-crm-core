@@ -17,7 +17,7 @@
 - [ ] Regra de negócio está no domínio/aplicação, não no resolver?
 - [ ] Isolamento de tenant garantido?
 - [ ] Validação com FluentValidation?
-- [ ] Autorização explícita? (`[Authorize]` na classe — nunca verificação manual via IHttpContextAccessor)
+- [ ] Autorizacao explicita por policy? (`[Authorize(Policy = SystemPermissions.Xxx)]`; evitar `[Authorize]` generico em operacoes de negocio)
 - [ ] `AsNoTracking()` nas leituras?
 - [ ] Soft delete (nunca hard delete)?
 - [ ] Repositório registrado no `DependencyInjection.cs`?
@@ -83,7 +83,7 @@ Toda nova entidade deve ter todos os artefatos abaixo antes de ser considerada c
 - [ ] `{Entidade}Queries` no GraphQL (lista paginada + por ID)
 - [ ] `{Entidade}Mutations` no GraphQL (create, update, delete)
 - [ ] Inputs e payloads explícitos (`Create{Entidade}Input`, `Update{Entidade}Input`, `{Entidade}Payload`)
-- [ ] Policies de autorização aplicadas (`{modulo}:{recurso}:read` e `{modulo}:{recurso}:write`)
+- [ ] Policies de autorizacao aplicadas (`read/create/update/delete` quando houver CRUD)
 - [ ] **`{Entidade}Queries` e `{Entidade}Mutations` registrados no `Program.cs` via `.AddTypeExtension<>()`**
 
 ### Infrastructure
@@ -110,3 +110,4 @@ Toda nova entidade deve ter todos os artefatos abaixo antes de ser considerada c
 | `StudentGuardian` | ✅ | ✅ | ✅ | ✅ |
 | `StudentCourse` | ✅ | ✅ | ✅ | ✅ |
 | `Employee` | ✅ | ✅ | ✅ | ✅ |
+

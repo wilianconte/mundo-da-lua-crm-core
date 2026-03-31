@@ -15,6 +15,9 @@ public class Role : TenantEntity
     private readonly List<UserRole> _userRoles = [];
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
 
+    private readonly List<RolePermission> _rolePermissions = [];
+    public IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions.AsReadOnly();
+
     private Role() { }
 
     public static Role Create(Guid tenantId, string name, string? description = null)
@@ -35,6 +38,19 @@ public class Role : TenantEntity
     {
         Name = name.Trim();
         Description = description?.Trim();
+        Touch();
+    }
+
+    public void SyncPermissions(IReadOnlyCollection<Guid> permissionIds)
+    {
+        var target = permissionIds.Distinct().ToHashSet();
+        _rolePermissions.RemoveAll(x => !target.Contains(x.PermissionId));
+
+        var existing = _rolePermissions.Select(x => x.PermissionId).ToHashSet();
+        foreach (var pid in target)
+            if (!existing.Contains(pid))
+                _rolePermissions.Add(RolePermission.Create(Id, pid));
+
         Touch();
     }
 }

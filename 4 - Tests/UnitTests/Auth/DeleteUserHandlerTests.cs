@@ -1,4 +1,5 @@
 using MyCRM.Auth.Application.Commands.Users.DeleteUser;
+using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Domain.Entities;
 using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Shared.Kernel.MultiTenancy;
@@ -9,6 +10,7 @@ namespace MyCRM.UnitTests.Auth;
 public sealed class DeleteUserHandlerTests
 {
     private readonly IUserRepository _repository = Substitute.For<IUserRepository>();
+    private readonly IPermissionService _permissionService = Substitute.For<IPermissionService>();
     private readonly ITenantService _tenant = Substitute.For<ITenantService>();
     private readonly DeleteUserHandler _handler;
     private readonly Guid _tenantId = Guid.NewGuid();
@@ -16,7 +18,7 @@ public sealed class DeleteUserHandlerTests
     public DeleteUserHandlerTests()
     {
         _tenant.TenantId.Returns(_tenantId);
-        _handler = new DeleteUserHandler(_repository, _tenant);
+        _handler = new DeleteUserHandler(_repository, _permissionService, _tenant);
     }
 
     [Fact]
@@ -30,6 +32,7 @@ public sealed class DeleteUserHandlerTests
         Assert.True(result.IsSuccess);
         _repository.Received(1).Delete(user);
         await _repository.Received(1).SaveChangesAsync(default);
+        _permissionService.Received(1).InvalidateCache(user.Id);
     }
 
     [Fact]

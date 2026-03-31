@@ -507,34 +507,41 @@ Regras:
 
 ---
 
-## AUTORIZAÇÃO
+## AUTORIZACAO
 
-Modelo de permissão:
+Modelo de permissao:
 ```
-{modulo}:{recurso}:{operacao}
+{recurso}:{operacao}
 ```
-Exemplos: `crm:person:read`, `crm:person:write`, `escola:aluno:read`, `clinica:agenda:write`
+Exemplos atuais: `students:read`, `students:create`, `student_guardians:update`, `users:manage`, `roles:manage`.
 
-**Padrão obrigatório nos resolvers:** `[Authorize]` no nível da classe via `HotChocolate.Authorization`:
+Padrao obrigatorio nos resolvers:
+- usar policy explicita com `[Authorize(Policy = SystemPermissions.Xxx)]` para operacoes de negocio;
+- evitar `[Authorize]` generico em recursos sensiveis.
+
+Exemplo:
 ```csharp
-[Authorize]
+[Authorize(Policy = SystemPermissions.StudentsRead)]
 [QueryType]
-public sealed class PersonQueries { ... }
+public sealed class StudentQueries { ... }
 
-[Authorize]
 [MutationType]
-public sealed class PersonMutations { ... }
+public sealed class StudentMutations
+{
+    [Authorize(Policy = SystemPermissions.StudentsCreate)]
+    public Task<StudentPayload> CreateStudentAsync(...) { ... }
+}
 ```
 
 Regras:
-- `[Authorize]` deve estar na **classe**, nunca verificação manual por método
-- `AuthMutations` é a única exceção — sem `[Authorize]` pois login é público
-- `.AddAuthorizationCore()` deve ser chamado no `IRequestExecutorBuilder` (GraphQL server), além do `builder.Services.AddAuthorization()` do ASP.NET Core — **ATENÇÃO: usar `.AddAuthorization()` no chain do GraphQL causa erro de compilação** `'IRequestExecutorBuilder' does not contain a definition for 'AddAuthorization'`
-- `global using HotChocolate.Authorization;` já está em `GlobalUsings.cs` do projeto Gateway — não precisa de `using` por arquivo
+- Login e refresh token permanecem `[AllowAnonymous]`.
+- Policies sao registradas automaticamente a partir de `SystemPermissions.All` em `Program.cs`.
+- Toda nova permissao precisa ser adicionada em `SystemPermissions` e em `SystemPermissions.All`.
+- Nao fazer verificacao manual por `IHttpContextAccessor` dentro de resolver para autorizacao.
 
 ---
 
-## FLUXO OBRIGATÓRIO PARA TESTES DE CONSULTA GRAPHQL
+## FLUXO OBRIGATORIO PARA TESTES DE CONSULTA GRAPHQL
 
 ### Passo 1 — Obter o token JWT
 
@@ -599,3 +606,5 @@ Quando novas mutations forem adicionadas em `AuthMutations`:
 - manter `Login` com `[AllowAnonymous]`;
 - aplicar `[Authorize]` nas mutations sensiveis (ex.: `CreateUserAsync`);
 - manter tratamento padrao de erro com `GraphQLException` + `extensions.code`.
+
+

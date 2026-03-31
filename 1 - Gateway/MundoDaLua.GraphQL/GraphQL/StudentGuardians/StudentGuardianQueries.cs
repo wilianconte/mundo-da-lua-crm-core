@@ -1,10 +1,11 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.StudentGuardians;
 
-[Authorize]
+[Authorize(Policy = SystemPermissions.StudentGuardiansRead)]
 [QueryType]
 public sealed class StudentGuardianQueries
 {

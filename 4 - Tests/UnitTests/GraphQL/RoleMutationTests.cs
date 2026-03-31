@@ -2,12 +2,14 @@ using System.Security.Claims;
 using HotChocolate.Execution;
 using HotChocolate.Types;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using MyCRM.Auth.Application.Commands.Roles.CreateRole;
 using MyCRM.Auth.Application.Commands.Roles.DeleteRole;
 using MyCRM.Auth.Application.Commands.Roles.UpdateRole;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth;
+using MyCRM.Shared.Kernel;
 using NSubstitute;
 using KernelResult = MyCRM.Shared.Kernel.Results.Result;
 
@@ -19,7 +21,11 @@ public sealed class RoleMutationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAuthorization();
+        services.AddAuthorization(opts =>
+        {
+            foreach (var (name, _) in SystemPermissions.All)
+                opts.AddPolicy(name, b => b.RequireAuthenticatedUser());
+        });
         services.AddSingleton(sender);
 
         return await services
@@ -55,6 +61,7 @@ public sealed class RoleMutationTests
         Name: name,
         Description: "Acesso total",
         IsActive: true,
+        Permissions: [],
         CreatedAt: DateTimeOffset.UtcNow,
         UpdatedAt: null,
         CreatedBy: null,

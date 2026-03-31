@@ -27,7 +27,7 @@ git checkout -b claude/<descricao-curta-da-feature>
 # claude/fix-tenant-filter-bug
 ```
 
-**Ao finalizar a implementação, crie um Pull Request para `main`:**
+**Ao finalizar a implementação, crie um Pull Request para `dev`:**
 
 ```bash
 git add <arquivos-relevantes>
@@ -48,7 +48,7 @@ EOF
 ```
 
 Regras:
-- Nunca commitar diretamente em `main`
+- Nunca commitar diretamente em `main` ou `dev`
 - Nome da branch deve descrever a feature/fix em inglês, no formato `claude/<descricao>`
 - O PR deve ser criado antes de encerrar a tarefa — sem precisar que o usuário peça
 - O link do PR deve ser reportado ao usuário ao final
@@ -165,7 +165,7 @@ Shared.Kernel ← todos
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
 | `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses`, `employees` | CRM |
-| `auth` | `AuthDbContext` | `users` | Auth |
+| `auth` | `AuthDbContext` | `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `refresh_tokens` | Auth |
 
 Schemas planejados (ainda não implementados):
 
@@ -194,3 +194,17 @@ Leia `references/entities.md` para documentação completa de cada entidade.
 | `StudentCourse` | `crm.student_courses` | Matrícula aluno↔curso |
 | `Employee` | `crm.employees` | Papel de `Person` no contexto de RH |
 | `Customer` | `crm.customers` | Entidade legada de CRM genérico |
+
+
+---
+
+## RBAC (obrigatorio para novas entregas)
+
+- Todo resolver de negocio deve usar policy explicita baseada em `SystemPermissions`.
+- Evitar `[Authorize]` generico em recursos sensiveis; preferir `[Authorize(Policy = ...)]`.
+- Ao criar novo recurso protegido:
+1. adicionar constante em `SystemPermissions`;
+2. registrar em `SystemPermissions.All` com grupo;
+3. aplicar policy em Query/Mutation;
+4. validar seed de permissoes.
+- O seed garante que o role `Administrador` tenha todas as permissoes ativas.

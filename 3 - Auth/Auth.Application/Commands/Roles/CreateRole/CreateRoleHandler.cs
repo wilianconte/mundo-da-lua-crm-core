@@ -38,6 +38,9 @@ public sealed class CreateRoleHandler : IRequestHandler<CreateRoleCommand, Resul
         role.Name,
         role.Description,
         role.IsActive,
+        role.RolePermissions
+            .Select(rp => new PermissionDto(rp.PermissionId, rp.Permission?.Name ?? string.Empty, rp.Permission?.Group ?? string.Empty, rp.Permission?.Description, rp.Permission?.IsActive ?? false))
+            .ToList(),
         role.CreatedAt,
         role.UpdatedAt,
         role.CreatedBy,

@@ -5,13 +5,14 @@ using MyCRM.CRM.Application.Commands.Students.CreateStudent;
 using MyCRM.CRM.Application.Commands.Students.UpdateStudent;
 using MyCRM.CRM.Application.Commands.Students.DeleteStudent;
 using MyCRM.GraphQL.GraphQL.Students.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Students;
 
-[Authorize]
 [MutationType]
 public sealed class StudentMutations
 {
+    [Authorize(Policy = SystemPermissions.StudentsCreate)]
     public async Task<StudentPayload> CreateStudentAsync(
         CreateStudentInput input,
         [Service] ISender sender,
@@ -32,6 +33,7 @@ public sealed class StudentMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentsUpdate)]
     public async Task<StudentPayload> UpdateStudentAsync(
         Guid id,
         UpdateStudentInput input,
@@ -53,6 +55,7 @@ public sealed class StudentMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentsDelete)]
     public async Task<bool> DeleteStudentAsync(
         Guid id,
         [Service] ISender sender,

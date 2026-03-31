@@ -49,9 +49,9 @@ Person 1──0..1  Student  (FK em Student.PersonId)
 Student 1──0..* StudentGuardian (FK em StudentGuardian.StudentId)
 ```
 
-Campos específicos: `RegistrationNumber`, `SchoolName`, `GradeOrClass`, `EnrollmentType`, `UnitId`, `ClassGroup`, `StartDate`, `Status` (StudentStatus), `Notes`, `AcademicObservation`.
+Campos específicos: `UnitId`, `Notes`.
 
-Enums: `StudentStatus` (Active, Inactive, Graduated, Transferred, Suspended).
+Status acadêmico exibido para aluno vem de `StudentCourse.Status` via enum `StudentCourseStatus`.
 
 Restrição de unicidade: `(TenantId, PersonId)` único onde `IsDeleted = false` — uma pessoa não pode ter dois registros de aluno ativos.
 
@@ -147,6 +147,27 @@ Campos específicos: `Email`, `PasswordHash`, `Name`, `IsActive`, `PersonId` (nu
 Restrição de unicidade: `(TenantId, PersonId)` único onde `PersonId IS NOT NULL` — uma pessoa não pode ter dois usuários ativos no mesmo tenant.
 
 **Design decision:** A FK entre `User` (auth schema) e `Person` (crm schema) é lógica, não física — módulos Auth e CRM são independentes com DbContexts separados. Sem navigation property EF. O vínculo é gerenciado via `User.LinkToPerson(Guid)` e `User.UnlinkFromPerson()`.
+
+---
+
+## RBAC (Auth) — entidades de autorização (`auth.roles`, `auth.permissions`, `auth.user_roles`, `auth.role_permissions`)
+
+Modelo de autorização é baseado em permissões:
+
+```
+User *──* Role          (via auth.user_roles)
+Role *──* Permission    (via auth.role_permissions)
+```
+
+- `Role`: perfil de acesso por tenant (ex.: Administrador, Coordenador).
+- `Permission`: capacidade atômica do sistema (ex.: `students:read`, `students:update`).
+- `UserRole`: vínculo N:N entre usuário e perfil.
+- `RolePermission`: vínculo N:N entre perfil e permissões.
+
+**Design decisions:**
+- Policies do GraphQL usam `SystemPermissions`.
+- `PermissionSeeder` sincroniza permissões ativas no banco.
+- `AuthDataSeeder` garante que o role `Administrador` tenha todas as permissões ativas.
 
 ---
 

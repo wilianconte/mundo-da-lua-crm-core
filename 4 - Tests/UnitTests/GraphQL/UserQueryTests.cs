@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyCRM.Auth.Domain.Entities;
 using MyCRM.Auth.Infrastructure.Persistence;
 using MyCRM.GraphQL.GraphQL.Auth;
+using MyCRM.Shared.Kernel;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using NSubstitute;
@@ -39,7 +40,11 @@ public sealed class UserQueryTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAuthorization();
+        services.AddAuthorization(opts =>
+        {
+            foreach (var (name, _) in SystemPermissions.All)
+                opts.AddPolicy(name, b => b.RequireAuthenticatedUser());
+        });
         services.AddSingleton(db);
 
         return await services

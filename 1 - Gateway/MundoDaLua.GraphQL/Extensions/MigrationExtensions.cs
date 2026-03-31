@@ -22,25 +22,22 @@ public static class MigrationExtensions
         await ResetMigrationsIfSchemaLostAsync(authDb, "auth", "users");
         await authDb.Database.MigrateAsync();
 
-        var tenantService   = sp.GetRequiredService<ITenantService>();
+        var tenantService = sp.GetRequiredService<ITenantService>();
 
-        // O CRM seed roda primeiro — garante que a Person do admin existe
+        // CRM seed first so the admin Person exists.
         await DataSeeder.SeedAsync(customersDb, tenantService);
 
-        // Recupera o PersonId da Person admin no CRM para vinculá-la ao User admin no Auth
+        // Fetch the admin PersonId in CRM to link it to admin User in Auth.
         tenantService.SetTenant(DataSeeder.SeedTenantId);
         var adminPersonId = await GetAdminPersonIdAsync(customersDb);
 
-        // O Auth seed usa o PersonId do admin para vincular User ↔ Person
+        // Sync system permissions before ensuring admin role permissions.
+        await PermissionSeeder.SeedAsync(authDb);
+
+        // Seed auth data and guarantee admin role has all active permissions.
         await AuthDataSeeder.SeedAsync(authDb, tenantService, adminPersonId);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Retorna o Id da Person do administrador no CRM (busca por e-mail).
-    /// Retorna null se a Person ainda não existir (seed do CRM não rodou).
-    /// </summary>
     private static async Task<Guid?> GetAdminPersonIdAsync(CRMDbContext crmDb)
     {
         const string adminEmail = "admin@mundodalua.com";
