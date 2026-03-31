@@ -1,5 +1,6 @@
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.Services;
+using MyCRM.Auth.Domain.Entities;
 using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using NSubstitute;
@@ -9,6 +10,7 @@ namespace MyCRM.UnitTests.Auth;
 public sealed class CreateUserHandlerTests
 {
     private readonly IUserRepository _repository = Substitute.For<IUserRepository>();
+    private readonly IRoleRepository _roleRepository = Substitute.For<IRoleRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly ITenantService _tenant = Substitute.For<ITenantService>();
     private readonly CreateUserHandler _handler;
@@ -17,14 +19,14 @@ public sealed class CreateUserHandlerTests
     public CreateUserHandlerTests()
     {
         _tenant.TenantId.Returns(_tenantId);
-        _handler = new CreateUserHandler(_repository, _passwordHasher, _tenant);
+        _handler = new CreateUserHandler(_repository, _roleRepository, _passwordHasher, _tenant);
     }
 
     [Fact]
     public async Task Handle_ValidCommand_ReturnsSuccess()
     {
-        _repository.EmailExistsAsync(_tenantId, "maria@test.com", default).Returns(false);
-        _repository.PersonIdAlreadyLinkedAsync(_tenantId, Arg.Any<Guid>(), default).Returns(false);
+        _repository.EmailExistsAsync(_tenantId, "maria@test.com", null, default).Returns(false);
+        _repository.PersonIdAlreadyLinkedAsync(_tenantId, Arg.Any<Guid>(), null, default).Returns(false);
         _passwordHasher.Hash("Password123!").Returns("hashed-password");
 
         var command = new CreateUserCommand("Maria", "maria@test.com", "Password123!", Guid.NewGuid());
@@ -40,7 +42,7 @@ public sealed class CreateUserHandlerTests
     [Fact]
     public async Task Handle_DuplicateEmail_ReturnsFailure()
     {
-        _repository.EmailExistsAsync(_tenantId, "existing@test.com", default).Returns(true);
+        _repository.EmailExistsAsync(_tenantId, "existing@test.com", null, default).Returns(true);
 
         var command = new CreateUserCommand("Maria", "existing@test.com", "Password123!", null);
 
@@ -54,8 +56,8 @@ public sealed class CreateUserHandlerTests
     public async Task Handle_PersonAlreadyLinked_ReturnsFailure()
     {
         var personId = Guid.NewGuid();
-        _repository.EmailExistsAsync(_tenantId, "maria@test.com", default).Returns(false);
-        _repository.PersonIdAlreadyLinkedAsync(_tenantId, personId, default).Returns(true);
+        _repository.EmailExistsAsync(_tenantId, "maria@test.com", null, default).Returns(false);
+        _repository.PersonIdAlreadyLinkedAsync(_tenantId, personId, null, default).Returns(true);
 
         var command = new CreateUserCommand("Maria", "maria@test.com", "Password123!", personId);
 
@@ -63,5 +65,38 @@ public sealed class CreateUserHandlerTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal("USER_PERSON_ALREADY_LINKED", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Handle_WithRoleFromDifferentTenant_ReturnsFailure()
+    {
+        var roleId = Guid.NewGuid();
+        _repository.EmailExistsAsync(_tenantId, "maria@test.com", null, default).Returns(false);
+        _roleRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default).Returns([]);
+        _roleRepository.GetByIdsIgnoringQueryFiltersAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns([Role.Create(Guid.NewGuid(), "Professor")]);
+
+        var command = new CreateUserCommand("Maria", "maria@test.com", "Password123!", null, [roleId]);
+
+        var result = await _handler.Handle(command, default);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("ROLE_TENANT_MISMATCH", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Handle_WithRoleNotFound_ReturnsFailure()
+    {
+        var roleId = Guid.NewGuid();
+        _repository.EmailExistsAsync(_tenantId, "maria@test.com", null, default).Returns(false);
+        _roleRepository.GetByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default).Returns([]);
+        _roleRepository.GetByIdsIgnoringQueryFiltersAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default).Returns([]);
+
+        var command = new CreateUserCommand("Maria", "maria@test.com", "Password123!", null, [roleId]);
+
+        var result = await _handler.Handle(command, default);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("ROLE_NOT_FOUND", result.ErrorCode);
     }
 }

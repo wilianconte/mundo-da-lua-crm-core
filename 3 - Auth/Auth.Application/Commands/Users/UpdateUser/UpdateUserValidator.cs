@@ -1,11 +1,14 @@
 using FluentValidation;
 
-namespace MyCRM.Auth.Application.Commands.Users.CreateUser;
+namespace MyCRM.Auth.Application.Commands.Users.UpdateUser;
 
-public sealed class CreateUserValidator : AbstractValidator<CreateUserCommand>
+public sealed class UpdateUserValidator : AbstractValidator<UpdateUserCommand>
 {
-    public CreateUserValidator()
+    public UpdateUserValidator()
     {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("User id is required.");
+
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Name is required.")
             .MaximumLength(200);
@@ -16,8 +19,8 @@ public sealed class CreateUserValidator : AbstractValidator<CreateUserCommand>
             .MaximumLength(254);
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MaximumLength(128);
+            .MaximumLength(128)
+            .When(x => !string.IsNullOrWhiteSpace(x.Password));
 
         RuleForEach(x => x.RoleIds)
             .NotEmpty()

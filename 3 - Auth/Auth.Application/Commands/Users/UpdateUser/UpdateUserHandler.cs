@@ -1,42 +1,45 @@
 using MediatR;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.Auth.Application.Services;
-using MyCRM.Auth.Domain.Entities;
 using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using MyCRM.Shared.Kernel.Results;
 
-namespace MyCRM.Auth.Application.Commands.Users.CreateUser;
+namespace MyCRM.Auth.Application.Commands.Users.UpdateUser;
 
-public sealed class CreateUserHandler : IRequestHandler<CreateUserCommand, Result<UserDto>>
+public sealed class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Result<UserDto>>
 {
-    private readonly IUserRepository _repository;
+    private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantService _tenant;
 
-    public CreateUserHandler(
-        IUserRepository repository,
+    public UpdateUserHandler(
+        IUserRepository userRepository,
         IRoleRepository roleRepository,
         IPasswordHasher passwordHasher,
         ITenantService tenant)
     {
-        _repository = repository;
+        _userRepository = userRepository;
         _roleRepository = roleRepository;
         _passwordHasher = passwordHasher;
         _tenant = tenant;
     }
 
-    public async Task<Result<UserDto>> Handle(CreateUserCommand request, CancellationToken ct)
+    public async Task<Result<UserDto>> Handle(UpdateUserCommand request, CancellationToken ct)
     {
-        var emailExists = await _repository.EmailExistsAsync(_tenant.TenantId, request.Email, ct: ct);
+        var user = await _userRepository.GetByIdWithRolesAsync(request.Id, ct);
+        if (user is null || user.TenantId != _tenant.TenantId)
+            return Result<UserDto>.Failure("USER_NOT_FOUND", "User not found.");
+
+        var emailExists = await _userRepository.EmailExistsAsync(_tenant.TenantId, request.Email, request.Id, ct);
         if (emailExists)
             return Result<UserDto>.Failure("USER_EMAIL_DUPLICATE", "A user with this email already exists.");
 
         if (request.PersonId.HasValue)
         {
-            var alreadyLinked = await _repository.PersonIdAlreadyLinkedAsync(_tenant.TenantId, request.PersonId.Value, ct: ct);
-            if (alreadyLinked)
+            var personAlreadyLinked = await _userRepository.PersonIdAlreadyLinkedAsync(_tenant.TenantId, request.PersonId.Value, request.Id, ct);
+            if (personAlreadyLinked)
                 return Result<UserDto>.Failure("USER_PERSON_ALREADY_LINKED", "This person is already linked to another user.");
         }
 
@@ -44,19 +47,16 @@ public sealed class CreateUserHandler : IRequestHandler<CreateUserCommand, Resul
         if (roleValidationResult is not null)
             return roleValidationResult;
 
-        var passwordHash = _passwordHasher.Hash(request.Password);
-        var user = User.Create(
-            tenantId: _tenant.TenantId,
-            name: request.Name,
-            email: request.Email,
-            passwordHash: passwordHash,
-            personId: request.PersonId);
+        user.UpdateProfile(request.Name, request.Email, request.PersonId, request.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+            user.UpdatePassword(_passwordHasher.Hash(request.Password));
 
         if (request.RoleIds is not null)
             user.SyncRoles(request.RoleIds);
 
-        await _repository.AddAsync(user, ct);
-        await _repository.SaveChangesAsync(ct);
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync(ct);
 
         return Result<UserDto>.Success(new UserDto(
             user.Id,
@@ -73,10 +73,13 @@ public sealed class CreateUserHandler : IRequestHandler<CreateUserCommand, Resul
 
     private async Task<Result<UserDto>?> ValidateRolesAsync(IReadOnlyList<Guid>? roleIds, CancellationToken ct)
     {
-        if (roleIds is null || roleIds.Count == 0)
+        if (roleIds is null)
             return null;
 
         var uniqueRoleIds = roleIds.Distinct().ToArray();
+        if (uniqueRoleIds.Length == 0)
+            return null;
+
         var tenantRoles = await _roleRepository.GetByIdsAsync(uniqueRoleIds, ct);
         if (tenantRoles.Count == uniqueRoleIds.Length)
             return null;

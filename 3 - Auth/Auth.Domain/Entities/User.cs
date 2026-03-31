@@ -40,6 +40,30 @@ public class User : TenantEntity
         Touch();
     }
 
+    public void UpdateProfile(string name, string email, Guid? personId, bool isActive)
+    {
+        Name = name.Trim();
+        Email = email.Trim().ToLowerInvariant();
+        PersonId = personId;
+        IsActive = isActive;
+        Touch();
+    }
+
+    public void SyncRoles(IReadOnlyCollection<Guid> roleIds)
+    {
+        var targetRoleIds = roleIds.Distinct().ToHashSet();
+        _userRoles.RemoveAll(x => !targetRoleIds.Contains(x.RoleId));
+
+        var existingRoleIds = _userRoles.Select(x => x.RoleId).ToHashSet();
+        foreach (var roleId in targetRoleIds)
+        {
+            if (!existingRoleIds.Contains(roleId))
+                _userRoles.Add(UserRole.Create(Id, roleId));
+        }
+
+        Touch();
+    }
+
     public void LinkToPerson(Guid personId)
     {
         PersonId = personId;

@@ -47,6 +47,7 @@ public sealed class UserQueryTests
             .AddQueryType()
             .AddTypeExtension<UserQueries>()
             .AddType<UserObjectType>()
+            .AddType<RoleObjectType>()
             .AddAuthorization()
             .AddFiltering()
             .AddSorting()
@@ -122,7 +123,7 @@ public sealed class UserQueryTests
         var expectedFields = new[]
         {
             "id", "name", "email", "isActive", "personId",
-            "createdAt", "updatedAt", "createdBy", "updatedBy",
+            "createdAt", "updatedAt", "createdBy", "updatedBy", "roles",
         };
 
         foreach (var field in expectedFields)
@@ -289,6 +290,58 @@ public sealed class UserQueryTests
         Assert.NotNull(found);
         Assert.Equal(user.Id.ToString(), found["id"]?.ToString());
         Assert.Equal("Alice", found["name"]?.ToString());
+    }
+
+    [Fact]
+    public async Task UserById_WithToken_ReturnsRoles()
+    {
+        await using var db = CreateInMemoryDbContext();
+
+        var user = CreateUser("Alice", "alice@test.com");
+        var role = Role.Create(TenantId, "Administrador", "Acesso total");
+        await db.Users.AddAsync(user);
+        await db.Roles.AddAsync(role);
+        await db.UserRoles.AddAsync(UserRole.Create(user.Id, role.Id));
+        await db.SaveChangesAsync();
+
+        var executor = await BuildExecutorAsync(db);
+
+        var request = BuildRequest(
+            $"{{ userById(id: \"{user.Id}\") {{ id roles {{ id name description isActive }} }} }}");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var found = result.Data!["userById"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(found);
+
+        var roles = found["roles"] as IReadOnlyList<object?>;
+        Assert.NotNull(roles);
+        Assert.Single(roles);
+    }
+
+    [Fact]
+    public async Task Users_WithToken_ReturnsRoles()
+    {
+        await using var db = CreateInMemoryDbContext();
+
+        var user = CreateUser("Bob", "bob@test.com");
+        var role = Role.Create(TenantId, "Professor", "Docencia");
+        await db.Users.AddAsync(user);
+        await db.Roles.AddAsync(role);
+        await db.UserRoles.AddAsync(UserRole.Create(user.Id, role.Id));
+        await db.SaveChangesAsync();
+
+        var executor = await BuildExecutorAsync(db);
+        var request = BuildRequest("{ users(first: 10) { nodes { id roles { id name description isActive } } } }");
+        var result = (await executor.ExecuteAsync(request)).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var users = result.Data!["users"] as IReadOnlyDictionary<string, object?>;
+        var nodes = users!["nodes"] as IReadOnlyList<object?>;
+        var firstNode = nodes![0] as IReadOnlyDictionary<string, object?>;
+        var roles = firstNode!["roles"] as IReadOnlyList<object?>;
+        Assert.NotNull(roles);
+        Assert.Single(roles);
     }
 
     [Fact]
