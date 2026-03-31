@@ -12,6 +12,7 @@ public sealed class UpdateUserHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IRoleRepository _roleRepository = Substitute.For<IRoleRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
+    private readonly IPermissionService _permissionService = Substitute.For<IPermissionService>();
     private readonly ITenantService _tenant = Substitute.For<ITenantService>();
     private readonly UpdateUserHandler _handler;
     private readonly Guid _tenantId = Guid.NewGuid();
@@ -19,7 +20,7 @@ public sealed class UpdateUserHandlerTests
     public UpdateUserHandlerTests()
     {
         _tenant.TenantId.Returns(_tenantId);
-        _handler = new UpdateUserHandler(_userRepository, _roleRepository, _passwordHasher, _tenant);
+        _handler = new UpdateUserHandler(_userRepository, _roleRepository, _passwordHasher, _permissionService, _tenant);
     }
 
     [Fact]
@@ -80,6 +81,7 @@ public sealed class UpdateUserHandlerTests
         Assert.False(result.Value.IsActive);
         Assert.Single(user.UserRoles);
         Assert.Equal(tenantRole.Id, user.UserRoles.Single().RoleId);
+        _permissionService.Received(1).InvalidateCache(user.Id);
     }
 
     [Fact]

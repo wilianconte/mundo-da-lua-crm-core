@@ -4,13 +4,14 @@ using MyCRM.CRM.Application.Commands.People.UpdatePerson;
 using MyCRM.CRM.Application.DTOs;
 using MediatR;
 using MyCRM.GraphQL.GraphQL.People.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.People;
 
-[Authorize]
 [MutationType]
 public sealed class PersonMutations
 {
+    [Authorize(Policy = SystemPermissions.PeopleCreate)]
     public async Task<PersonDto> CreatePersonAsync(
         CreatePersonInput input,
         [Service] ISender sender,
@@ -42,6 +43,7 @@ public sealed class PersonMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.PeopleUpdate)]
     public async Task<PersonDto> UpdatePersonAsync(
         Guid id,
         UpdatePersonInput input,
@@ -75,6 +77,7 @@ public sealed class PersonMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.PeopleDelete)]
     public async Task<bool> DeletePersonAsync(
         Guid id,
         [Service] ISender sender,
@@ -92,4 +95,3 @@ public sealed class PersonMutations
                         .Build()));
     }
 }
-

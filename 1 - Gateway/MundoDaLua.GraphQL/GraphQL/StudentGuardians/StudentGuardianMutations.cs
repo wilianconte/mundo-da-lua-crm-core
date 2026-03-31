@@ -5,13 +5,14 @@ using MyCRM.CRM.Application.Commands.StudentGuardians.CreateStudentGuardian;
 using MyCRM.CRM.Application.Commands.StudentGuardians.UpdateStudentGuardian;
 using MyCRM.CRM.Application.Commands.StudentGuardians.DeleteStudentGuardian;
 using MyCRM.GraphQL.GraphQL.StudentGuardians.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.StudentGuardians;
 
-[Authorize]
 [MutationType]
 public sealed class StudentGuardianMutations
 {
+    [Authorize(Policy = SystemPermissions.StudentGuardiansCreate)]
     public async Task<StudentGuardianPayload> CreateStudentGuardianAsync(
         CreateStudentGuardianInput input,
         [Service] ISender sender,
@@ -37,6 +38,7 @@ public sealed class StudentGuardianMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentGuardiansUpdate)]
     public async Task<StudentGuardianPayload> UpdateStudentGuardianAsync(
         Guid id,
         UpdateStudentGuardianInput input,
@@ -62,6 +64,7 @@ public sealed class StudentGuardianMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentGuardiansDelete)]
     public async Task<bool> DeleteStudentGuardianAsync(
         Guid id,
         [Service] ISender sender,

@@ -5,13 +5,14 @@ using MyCRM.CRM.Application.Commands.Companies.UpdateCompany;
 using MyCRM.CRM.Application.DTOs;
 using MediatR;
 using MyCRM.GraphQL.GraphQL.Companies.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Companies;
 
-[Authorize]
 [MutationType]
 public sealed class CompanyMutations
 {
+    [Authorize(Policy = SystemPermissions.CompaniesCreate)]
     public async Task<CompanyDto> CreateCompanyAsync(
         CreateCompanyInput input,
         [Service] ISender sender,
@@ -46,6 +47,7 @@ public sealed class CompanyMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.CompaniesUpdate)]
     public async Task<CompanyDto> UpdateCompanyAsync(
         Guid id,
         UpdateCompanyInput input,
@@ -82,6 +84,7 @@ public sealed class CompanyMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.CompaniesUpdate)]
     public async Task<CompanyDto> SetCompanyAddressAsync(
         SetCompanyAddressInput input,
         [Service] ISender sender,
@@ -108,6 +111,7 @@ public sealed class CompanyMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.CompaniesDelete)]
     public async Task<bool> DeleteCompanyAsync(
         Guid id,
         [Service] ISender sender,

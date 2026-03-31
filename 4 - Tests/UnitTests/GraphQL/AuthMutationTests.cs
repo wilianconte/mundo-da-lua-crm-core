@@ -10,6 +10,7 @@ using MyCRM.Auth.Application.Commands.Users.DeleteUser;
 using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth;
+using MyCRM.Shared.Kernel;
 using NSubstitute;
 
 namespace MyCRM.UnitTests.GraphQL;
@@ -20,7 +21,11 @@ public sealed class AuthMutationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAuthorization();
+        services.AddAuthorization(opts =>
+        {
+            foreach (var (name, _) in SystemPermissions.All)
+                opts.AddPolicy(name, b => b.RequireAuthenticatedUser());
+        });
         services.AddSingleton(sender);
         services.AddSingleton(mediator);
 

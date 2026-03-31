@@ -1,4 +1,5 @@
 using MediatR;
+using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using MyCRM.Shared.Kernel.Results;
@@ -8,11 +9,16 @@ namespace MyCRM.Auth.Application.Commands.Users.DeleteUser;
 public sealed class DeleteUserHandler : IRequestHandler<DeleteUserCommand, Result>
 {
     private readonly IUserRepository _repository;
+    private readonly IPermissionService _permissionService;
     private readonly ITenantService _tenant;
 
-    public DeleteUserHandler(IUserRepository repository, ITenantService tenant)
+    public DeleteUserHandler(
+        IUserRepository repository,
+        IPermissionService permissionService,
+        ITenantService tenant)
     {
         _repository = repository;
+        _permissionService = permissionService;
         _tenant = tenant;
     }
 
@@ -25,6 +31,7 @@ public sealed class DeleteUserHandler : IRequestHandler<DeleteUserCommand, Resul
 
         _repository.Delete(user);
         await _repository.SaveChangesAsync(ct);
+        _permissionService.InvalidateCache(user.Id);
 
         return Result.Success();
     }

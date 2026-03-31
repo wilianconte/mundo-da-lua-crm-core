@@ -17,6 +17,7 @@ public static class AuthDataSeeder
         tenantService.SetTenant(SeedTenantId);
 
         var adminRole = await EnsureAdminRoleAsync(db);
+        await EnsureAdminRoleHasAllPermissionsAsync(db, adminRole);
         await EnsureAdminUserAsync(db, adminRole, adminPersonId);
     }
 
@@ -25,6 +26,7 @@ public static class AuthDataSeeder
     private static async Task<Role> EnsureAdminRoleAsync(AuthDbContext db)
     {
         var role = await db.Roles
+            .Include(r => r.RolePermissions)
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Name == "Administrador" && r.TenantId == SeedTenantId);
 
@@ -40,6 +42,19 @@ public static class AuthDataSeeder
         }
 
         return role;
+    }
+
+    private static async Task EnsureAdminRoleHasAllPermissionsAsync(AuthDbContext db, Role adminRole)
+    {
+        var permissionIds = await db.Permissions
+            .IgnoreQueryFilters()
+            .Where(p => p.IsActive)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        adminRole.SyncPermissions(permissionIds);
+        db.Roles.Update(adminRole);
+        await db.SaveChangesAsync();
     }
 
     // ── Usuário admin ─────────────────────────────────────────────────────────

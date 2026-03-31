@@ -5,13 +5,14 @@ using MyCRM.CRM.Application.Commands.StudentCourses.CreateStudentCourse;
 using MyCRM.CRM.Application.Commands.StudentCourses.UpdateStudentCourse;
 using MyCRM.CRM.Application.Commands.StudentCourses.DeleteStudentCourse;
 using MyCRM.GraphQL.GraphQL.StudentCourses.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.StudentCourses;
 
-[Authorize]
 [MutationType]
 public sealed class StudentCourseMutations
 {
+    [Authorize(Policy = SystemPermissions.StudentCoursesCreate)]
     public async Task<StudentCoursePayload> CreateStudentCourseAsync(
         CreateStudentCourseInput input,
         [Service] ISender sender,
@@ -39,6 +40,7 @@ public sealed class StudentCourseMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentCoursesUpdate)]
     public async Task<StudentCoursePayload> UpdateStudentCourseAsync(
         Guid id,
         UpdateStudentCourseInput input,
@@ -67,6 +69,7 @@ public sealed class StudentCourseMutations
                         .Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.StudentCoursesDelete)]
     public async Task<bool> DeleteStudentCourseAsync(
         Guid id,
         [Service] ISender sender,

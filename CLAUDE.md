@@ -54,3 +54,28 @@ O link do PR deve ser reportado ao usuário ao final de cada tarefa.
 | Mapeamento | Mapster |
 
 Consulte `.claude/skills/core/SKILL.md` e seus `references/` para regras detalhadas.
+
+---
+
+## RBAC (estado atual e regras obrigatórias)
+
+### Estado atual validado
+
+- O backend usa RBAC por policy no GraphQL via `SystemPermissions` + `PermissionAuthorizationHandler`.
+- Policies são registradas automaticamente em `Program.cs` com base em `SystemPermissions.All`.
+- `PermissionSeeder` sincroniza permissões do sistema no banco.
+- `AuthDataSeeder` garante que o role `Administrador` receba todas as permissões ativas.
+
+### Regras para novas features
+
+- Nunca usar apenas `[Authorize]` em resolver de negócio; usar sempre `[Authorize(Policy = SystemPermissions.Xxx)]`.
+- Se criar nova funcionalidade protegida:
+1. Criar constante em `3 - Shared/Shared.Kernel/SystemPermissions.cs`.
+2. Adicionar em `SystemPermissions.All` com grupo.
+3. Aplicar a policy nos resolvers de query/mutation.
+- Manter `Login` e `RefreshToken` como `[AllowAnonymous]`.
+
+### Permissões por domínio (convencão)
+
+- CRUD completo com granularidade: `read`, `create`, `update`, `delete`.
+- Exemplo: `students:*`, `student_guardians:*`, `student_courses:*`, `customers:*`, etc.

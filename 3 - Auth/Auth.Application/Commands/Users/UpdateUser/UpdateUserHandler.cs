@@ -12,17 +12,20 @@ public sealed class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Resul
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IPermissionService _permissionService;
     private readonly ITenantService _tenant;
 
     public UpdateUserHandler(
         IUserRepository userRepository,
         IRoleRepository roleRepository,
         IPasswordHasher passwordHasher,
+        IPermissionService permissionService,
         ITenantService tenant)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _passwordHasher = passwordHasher;
+        _permissionService = permissionService;
         _tenant = tenant;
     }
 
@@ -57,6 +60,7 @@ public sealed class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Resul
 
         _userRepository.Update(user);
         await _userRepository.SaveChangesAsync(ct);
+        _permissionService.InvalidateCache(user.Id);
 
         return Result<UserDto>.Success(new UserDto(
             user.Id,

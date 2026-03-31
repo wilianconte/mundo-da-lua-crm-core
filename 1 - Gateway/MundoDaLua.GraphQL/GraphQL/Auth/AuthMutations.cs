@@ -6,13 +6,14 @@ using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth.Inputs;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
 [MutationType]
 public class AuthMutations
 {
-    [Authorize]
+    [Authorize(Policy = SystemPermissions.UsersManage)]
     public async Task<UserDto> CreateUserAsync(
         CreateUserInput input,
         [Service] ISender sender,
@@ -31,7 +32,7 @@ public class AuthMutations
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 
-    [Authorize]
+    [Authorize(Policy = SystemPermissions.UsersManage)]
     public async Task<UserDto> UpdateUserAsync(
         Guid id,
         UpdateUserInput input,
@@ -53,7 +54,7 @@ public class AuthMutations
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 
-    [Authorize]
+    [Authorize(Policy = SystemPermissions.UsersManage)]
     public async Task<bool> DeleteUserAsync(
         Guid id,
         [Service] ISender sender,

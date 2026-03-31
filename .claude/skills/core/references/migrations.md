@@ -128,6 +128,13 @@ O `MigrateAllDbContextsAsync` em `MigrationExtensions.cs` aplica migrations e ro
 await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
 ```
 
+Ordem recomendada no startup para RBAC:
+
+1. `PermissionSeeder.SeedAsync(authDb)` para sincronizar permissões do sistema.
+2. `AuthDataSeeder.SeedAsync(authDb, ...)` para garantir role admin + usuário admin.
+
+Isso evita ambiente em que o role `Administrador` exista sem permissões vinculadas.
+
 ---
 
 ## REGRA OBRIGATÓRIA — SEED PARA TODA NOVA ENTIDADE

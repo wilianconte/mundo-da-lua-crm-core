@@ -1,10 +1,11 @@
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Employees;
 
-[Authorize]
+[Authorize(Policy = SystemPermissions.EmployeesRead)]
 [QueryType]
 public sealed class EmployeeQueries
 {
