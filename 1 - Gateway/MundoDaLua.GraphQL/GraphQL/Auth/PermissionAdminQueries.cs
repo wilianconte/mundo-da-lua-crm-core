@@ -5,10 +5,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
-[Authorize(Policy = SystemPermissions.RolesManage)]
 [QueryType]
 public sealed class PermissionAdminQueries
 {
+    [Authorize(Policy = SystemPermissions.RolesManage)]
     public async Task<IReadOnlyList<PermissionDto>> GetPermissionsAsync(
         [Service] ISender sender,
         CancellationToken ct)
