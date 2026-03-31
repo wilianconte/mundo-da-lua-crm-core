@@ -5,10 +5,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.StudentGuardians;
 
-[Authorize(Policy = SystemPermissions.StudentGuardiansRead)]
 [QueryType]
 public sealed class StudentGuardianQueries
 {
+    [Authorize(Policy = SystemPermissions.StudentGuardiansRead)]
     [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
@@ -16,6 +16,7 @@ public sealed class StudentGuardianQueries
     public IQueryable<StudentGuardian> GetStudentGuardians([Service] CRMDbContext db) =>
         db.StudentGuardians.AsNoTracking();
 
+    [Authorize(Policy = SystemPermissions.StudentGuardiansRead)]
     [UseFirstOrDefault]
     [UseProjection]
     public IQueryable<StudentGuardian> GetStudentGuardianById(Guid id, [Service] CRMDbContext db) =>

@@ -7,10 +7,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Students;
 
-[Authorize(Policy = SystemPermissions.StudentsRead)]
 [QueryType]
 public sealed class StudentQueries
 {
+    [Authorize(Policy = SystemPermissions.StudentsRead)]
     [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering(typeof(StudentFilterType))]
@@ -32,6 +32,7 @@ public sealed class StudentQueries
         return query.Include(s => s.Courses);
     }
 
+    [Authorize(Policy = SystemPermissions.StudentsRead)]
     [UseFirstOrDefault]
     [UseProjection]
     public IQueryable<Student> GetStudentById(Guid id, [Service] CRMDbContext db) =>

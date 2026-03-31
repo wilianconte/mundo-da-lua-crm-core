@@ -5,10 +5,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Courses;
 
-[Authorize(Policy = SystemPermissions.CoursesRead)]
 [QueryType]
 public sealed class CourseQueries
 {
+    [Authorize(Policy = SystemPermissions.CoursesRead)]
     [UsePaging(IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
@@ -16,6 +16,7 @@ public sealed class CourseQueries
     public IQueryable<Course> GetCourses([Service] CRMDbContext db) =>
         db.Courses.AsNoTracking();
 
+    [Authorize(Policy = SystemPermissions.CoursesRead)]
     [UseFirstOrDefault]
     [UseProjection]
     public IQueryable<Course> GetCourseById(Guid id, [Service] CRMDbContext db) =>
