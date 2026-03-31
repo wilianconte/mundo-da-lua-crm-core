@@ -124,6 +124,7 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Auth.RoleObjectType>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.PermissionQueries>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.PermissionAdminQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentObjectTypeExtension>()
