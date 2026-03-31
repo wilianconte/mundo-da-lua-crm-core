@@ -17,6 +17,10 @@ public sealed class UserRepository : IUserRepository
         await _db.Users.AsNoTracking().ToListAsync(ct);
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _db.Users.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<User?> GetByIdWithRolesAsync(Guid id, CancellationToken ct = default) =>
+        await _db.Users
+            .Include(x => x.UserRoles)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
     public async Task AddAsync(User entity, CancellationToken ct = default) =>
         await _db.Users.AddAsync(entity, ct);
     public void Update(User entity) => _db.Users.Update(entity);
@@ -25,9 +29,17 @@ public sealed class UserRepository : IUserRepository
     public async Task<User?> GetByEmailAsync(Guid tenantId, string email, CancellationToken ct = default) =>
         await _db.Users.IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Email == email.ToLowerInvariant() && !x.IsDeleted, ct);
-    public async Task<bool> EmailExistsAsync(Guid tenantId, string email, CancellationToken ct = default) =>
-        await _db.Users.AnyAsync(x => x.TenantId == tenantId && x.Email == email.ToLowerInvariant(), ct);
+    public async Task<bool> EmailExistsAsync(Guid tenantId, string email, Guid? excludeId = null, CancellationToken ct = default) =>
+        await _db.Users.AnyAsync(
+            x => x.TenantId == tenantId
+                && x.Email == email.ToLowerInvariant()
+                && (excludeId == null || x.Id != excludeId.Value),
+            ct);
 
-    public async Task<bool> PersonIdAlreadyLinkedAsync(Guid tenantId, Guid personId, CancellationToken ct = default) =>
-        await _db.Users.AnyAsync(x => x.TenantId == tenantId && x.PersonId == personId, ct);
+    public async Task<bool> PersonIdAlreadyLinkedAsync(Guid tenantId, Guid personId, Guid? excludeUserId = null, CancellationToken ct = default) =>
+        await _db.Users.AnyAsync(
+            x => x.TenantId == tenantId
+                && x.PersonId == personId
+                && (excludeUserId == null || x.Id != excludeUserId.Value),
+            ct);
 }

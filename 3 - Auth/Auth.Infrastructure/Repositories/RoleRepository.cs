@@ -32,4 +32,25 @@ public sealed class RoleRepository : IRoleRepository
         await _db.Roles.AnyAsync(
             x => x.TenantId == tenantId && x.Name == name.Trim() && (excludeId == null || x.Id != excludeId.Value),
             ct);
+
+    public async Task<IReadOnlyList<Role>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return [];
+
+        return await _db.Roles
+            .Where(x => ids.Contains(x.Id))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Role>> GetByIdsIgnoringQueryFiltersAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return [];
+
+        return await _db.Roles
+            .IgnoreQueryFilters()
+            .Where(x => ids.Contains(x.Id) && !x.IsDeleted)
+            .ToListAsync(ct);
+    }
 }

@@ -1,9 +1,10 @@
 namespace MyCRM.GraphQL.GraphQL.Auth.Inputs;
 
-public record CreateUserInput(
+public record UpdateUserInput(
     string Name,
     string Email,
-    string Password,
     Guid? PersonId,
+    bool IsActive,
+    string? Password,
     IReadOnlyList<Guid>? RoleIds = null
 );

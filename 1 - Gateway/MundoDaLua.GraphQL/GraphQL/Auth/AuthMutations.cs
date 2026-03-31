@@ -1,6 +1,7 @@
 using MediatR;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.Commands.Users.DeleteUser;
+using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.DTOs;
@@ -21,7 +22,30 @@ public class AuthMutations
             input.Name,
             input.Email,
             input.Password,
-            input.PersonId), ct);
+            input.PersonId,
+            input.RoleIds), ct);
+
+        return result.IsSuccess
+            ? result.Value!
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    [Authorize]
+    public async Task<UserDto> UpdateUserAsync(
+        Guid id,
+        UpdateUserInput input,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new UpdateUserCommand(
+            id,
+            input.Name,
+            input.Email,
+            input.PersonId,
+            input.IsActive,
+            input.Password,
+            input.RoleIds), ct);
 
         return result.IsSuccess
             ? result.Value!

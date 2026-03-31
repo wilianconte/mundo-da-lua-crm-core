@@ -7,6 +7,7 @@ using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.Commands.Users.DeleteUser;
+using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth;
 using NSubstitute;
@@ -68,6 +69,16 @@ public sealed class AuthMutationTests
         var executor = await BuildExecutorAsync(sender, mediator);
 
         Assert.True(executor.Schema.MutationType!.Fields.ContainsField("login"));
+    }
+
+    [Fact]
+    public async Task Schema_UpdateUser_FieldExistsOnMutationType()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        Assert.True(executor.Schema.MutationType!.Fields.ContainsField("updateUser"));
     }
 
     [Fact]
@@ -240,6 +251,85 @@ public sealed class AuthMutationTests
         Assert.NotNull(created);
         Assert.Equal("Maria", created["name"]?.ToString());
         Assert.Equal("maria@test.com", created["email"]?.ToString());
+    }
+
+    [Fact]
+    public async Task CreateUser_WithRoleIds_MapsCommandAndReturnsCreatedUser()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var roleId = Guid.NewGuid();
+
+        var dto = new UserDto(
+            Id: Guid.NewGuid(),
+            TenantId: Guid.NewGuid(),
+            Name: "Maria",
+            Email: "maria@test.com",
+            IsActive: true,
+            PersonId: null,
+            CreatedAt: DateTimeOffset.UtcNow,
+            UpdatedAt: null,
+            CreatedBy: null,
+            UpdatedBy: null);
+
+        sender.Send(
+                Arg.Is<CreateUserCommand>(c => c.RoleIds != null && c.RoleIds.Count == 1 && c.RoleIds[0] == roleId),
+                Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result<UserDto>.Success(dto));
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ createUser(input: {{ name: \"Maria\", email: \"maria@test.com\", password: \"Password123!\", roleIds: [\"{roleId}\"] }}) {{ id name email }} }}",
+            authenticated: true))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var created = result.Data!["createUser"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(created);
+        Assert.Equal("Maria", created["name"]?.ToString());
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithRoleIds_MapsCommandAndReturnsUpdatedUser()
+    {
+        var sender = Substitute.For<ISender>();
+        var mediator = Substitute.For<IMediator>();
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+
+        var dto = new UserDto(
+            Id: userId,
+            TenantId: Guid.NewGuid(),
+            Name: "Maria Atualizada",
+            Email: "maria.atualizada@test.com",
+            IsActive: false,
+            PersonId: null,
+            CreatedAt: DateTimeOffset.UtcNow.AddDays(-1),
+            UpdatedAt: DateTimeOffset.UtcNow,
+            CreatedBy: null,
+            UpdatedBy: null);
+
+        sender.Send(
+                Arg.Is<UpdateUserCommand>(c =>
+                    c.Id == userId
+                    && c.RoleIds != null
+                    && c.RoleIds.Count == 1
+                    && c.RoleIds[0] == roleId
+                    && c.Password == "NovaSenha123!"),
+                Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result<UserDto>.Success(dto));
+
+        var executor = await BuildExecutorAsync(sender, mediator);
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ updateUser(id: \"{userId}\", input: {{ name: \"Maria Atualizada\", email: \"maria.atualizada@test.com\", personId: null, isActive: false, password: \"NovaSenha123!\", roleIds: [\"{roleId}\"] }}) {{ id name email isActive }} }}",
+            authenticated: true))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var updated = result.Data!["updateUser"] as IReadOnlyDictionary<string, object?>;
+        Assert.NotNull(updated);
+        Assert.Equal("Maria Atualizada", updated["name"]?.ToString());
+        Assert.Equal(false, updated["isActive"]);
     }
 }
 
