@@ -3,11 +3,10 @@ using HotChocolate.Execution;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MyCRM.Auth.Application.Services;
 using MyCRM.CRM.Application.Commands.People.CreatePerson;
 using MyCRM.CRM.Application.DTOs;
 using MyCRM.CRM.Domain.Entities;
-using MyCRM.Auth.Application.Queries.GetMyPermissions;
-using MyCRM.Auth.Application.Services;
 using MyCRM.CRM.Infrastructure.Persistence;
 using MyCRM.GraphQL.Authorization;
 using MyCRM.GraphQL.GraphQL.Auth;
@@ -19,12 +18,19 @@ using NSubstitute;
 
 namespace MyCRM.UnitTests.GraphQL;
 
-public sealed class PermissionAndPeopleAuthorizationRegressionTests
+/// <summary>
+/// Regression tests ensuring that class-level [Authorize] on RoleMutations
+/// does NOT bleed into PersonMutations (or any other mutation type extension).
+/// Root cause: RoleMutations previously had [Authorize(Policy = RolesManage)] at
+/// class level, which Hot Chocolate applied to all merged Mutation type fields,
+/// denying non-admin users even when they held the correct field-level permission.
+/// </summary>
+public sealed class CreatePersonMutationAuthorizationTests
 {
     private sealed class FixedTenantService(Guid tenantId) : ITenantService
     {
         public Guid TenantId { get; private set; } = tenantId;
-        public void SetTenant(Guid tenantIdValue) => TenantId = tenantIdValue;
+        public void SetTenant(Guid id) => TenantId = id;
     }
 
     private static async Task<IRequestExecutor> BuildExecutorAsync(
@@ -48,16 +54,15 @@ public sealed class PermissionAndPeopleAuthorizationRegressionTests
         services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddScoped<ITenantService>(_ => new FixedTenantService(tenantId));
         services.AddScoped<ICurrentUserService>(_ => currentUserService);
-        services.AddDbContext<CRMDbContext>(o => o.UseInMemoryDatabase($"crm-auth-{Guid.NewGuid()}"));
+        services.AddDbContext<CRMDbContext>(o => o.UseInMemoryDatabase($"crm-create-person-{Guid.NewGuid()}"));
 
         return await services
             .AddGraphQLServer()
             .AddQueryType()
             .AddMutationType()
-            .AddTypeExtension<PermissionQueries>()
-            .AddTypeExtension<PermissionAdminQueries>()
             .AddTypeExtension<PersonQueries>()
             .AddTypeExtension<PersonMutations>()
+            .AddTypeExtension<RoleMutations>()
             .AddAuthorization()
             .AddFiltering()
             .AddSorting()
@@ -65,7 +70,7 @@ public sealed class PermissionAndPeopleAuthorizationRegressionTests
             .BuildRequestExecutorAsync();
     }
 
-    private static IOperationRequest BuildRequest(string query, Guid userId)
+    private static IOperationRequest BuildRequest(string document, Guid userId)
     {
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
@@ -74,58 +79,76 @@ public sealed class PermissionAndPeopleAuthorizationRegressionTests
         ], authenticationType: "Bearer"));
 
         return new OperationRequestBuilder()
-            .SetDocument(query)
+            .SetDocument(document)
             .AddGlobalState(nameof(ClaimsPrincipal), principal)
             .Build();
     }
 
     [Fact]
-    public async Task AuthenticatedNonAdmin_WithPeopleRead_MustAccessMyPermissionsAndPeople()
+    public async Task NonAdminUser_WithPeopleCreate_MustSucceedOnCreatePerson()
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
+        var expectedPerson = new PersonDto(
+            Id: Guid.NewGuid(),
+            TenantId: tenantId,
+            FullName: "João da Silva",
+            PreferredName: null,
+            DocumentNumber: null,
+            BirthDate: null,
+            Gender: null,
+            MaritalStatus: null,
+            Nationality: null,
+            Occupation: null,
+            Email: null,
+            PrimaryPhone: null,
+            SecondaryPhone: null,
+            WhatsAppNumber: null,
+            ProfileImageUrl: null,
+            Status: PersonStatus.Active,
+            Notes: null,
+            CreatedAt: DateTimeOffset.UtcNow,
+            UpdatedAt: null);
+
         var sender = Substitute.For<ISender>();
-        sender.Send(Arg.Any<GetMyPermissionsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(MyCRM.Shared.Kernel.Results.Result<IReadOnlyList<string>>.Success([SystemPermissions.PeopleRead]));
+        sender.Send(Arg.Any<CreatePersonCommand>(), Arg.Any<CancellationToken>())
+            .Returns(MyCRM.Shared.Kernel.Results.Result<PersonDto>.Success(expectedPerson));
 
         var permissionService = Substitute.For<IPermissionService>();
-        permissionService.HasPermissionAsync(userId, SystemPermissions.PeopleRead, Arg.Any<CancellationToken>())
+        // Non-admin has people:create but NOT roles:manage
+        permissionService.HasPermissionAsync(userId, SystemPermissions.PeopleCreate, Arg.Any<CancellationToken>())
             .Returns(true);
-
-        var executor = await BuildExecutorAsync(sender, permissionService, tenantId);
-
-        var result = (await executor.ExecuteAsync(BuildRequest(
-            "{ myPermissions people(first: 1) { totalCount } }",
-            userId))).ExpectOperationResult();
-
-        Assert.Null(result.Errors);
-
-        var permissions = Assert.IsAssignableFrom<IReadOnlyList<object?>>(result.Data!["myPermissions"]);
-        Assert.Contains(SystemPermissions.PeopleRead, permissions.Select(x => x?.ToString()));
-
-        var people = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(result.Data!["people"]);
-        Assert.Equal("0", people["totalCount"]?.ToString());
-    }
-
-    [Fact]
-    public async Task AuthenticatedNonAdmin_WithoutPeopleRead_MustReceiveAuthorizationErrorOnPeople()
-    {
-        var userId = Guid.NewGuid();
-        var tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-
-        var sender = Substitute.For<ISender>();
-        sender.Send(Arg.Any<GetMyPermissionsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(MyCRM.Shared.Kernel.Results.Result<IReadOnlyList<string>>.Success([]));
-
-        var permissionService = Substitute.For<IPermissionService>();
-        permissionService.HasPermissionAsync(userId, SystemPermissions.PeopleRead, Arg.Any<CancellationToken>())
+        permissionService.HasPermissionAsync(userId, SystemPermissions.RolesManage, Arg.Any<CancellationToken>())
             .Returns(false);
 
         var executor = await BuildExecutorAsync(sender, permissionService, tenantId);
 
         var result = (await executor.ExecuteAsync(BuildRequest(
-            "{ people(first: 1) { totalCount } }",
+            "mutation { createPerson(input: { fullName: \"João da Silva\" }) { id fullName } }",
+            userId))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var data = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(result.Data!["createPerson"]);
+        Assert.Equal("João da Silva", data["fullName"]?.ToString());
+    }
+
+    [Fact]
+    public async Task NonAdminUser_WithoutPeopleCreate_MustReceiveAuthorizationError()
+    {
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
+        var sender = Substitute.For<ISender>();
+
+        var permissionService = Substitute.For<IPermissionService>();
+        permissionService.HasPermissionAsync(userId, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var executor = await BuildExecutorAsync(sender, permissionService, tenantId);
+
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            "mutation { createPerson(input: { fullName: \"Unauthorized\" }) { id fullName } }",
             userId))).ExpectOperationResult();
 
         Assert.NotNull(result.Errors);
@@ -134,85 +157,24 @@ public sealed class PermissionAndPeopleAuthorizationRegressionTests
     }
 
     [Fact]
-    public async Task AuthenticatedNonAdmin_WithPeopleCreate_MustCreatePerson()
+    public async Task NonAdminUser_WithPeopleCreate_ButWithoutRolesManage_MustNotAccessCreateRole()
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        var now = DateTimeOffset.UtcNow;
-        var createdPerson = new PersonDto(
-            Guid.NewGuid(),
-            tenantId,
-            "Pessoa Teste",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            PersonStatus.Active,
-            null,
-            now,
-            null);
 
         var sender = Substitute.For<ISender>();
-        sender.Send(Arg.Any<CreatePersonCommand>(), Arg.Any<CancellationToken>())
-            .Returns(MyCRM.Shared.Kernel.Results.Result<PersonDto>.Success(createdPerson));
 
         var permissionService = Substitute.For<IPermissionService>();
+        // Has people:create but NOT roles:manage
         permissionService.HasPermissionAsync(userId, SystemPermissions.PeopleCreate, Arg.Any<CancellationToken>())
             .Returns(true);
-
-        var executor = await BuildExecutorAsync(sender, permissionService, tenantId);
-
-        var result = (await executor.ExecuteAsync(BuildRequest(
-            """
-            mutation {
-              createPerson(input: {
-                fullName: "Pessoa Teste"
-              }) {
-                id
-                fullName
-              }
-            }
-            """,
-            userId))).ExpectOperationResult();
-
-        Assert.Null(result.Errors);
-
-        var createPerson = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(result.Data!["createPerson"]);
-        Assert.Equal(createdPerson.Id.ToString(), createPerson["id"]?.ToString());
-        Assert.Equal(createdPerson.FullName, createPerson["fullName"]?.ToString());
-    }
-
-    [Fact]
-    public async Task AuthenticatedNonAdmin_WithoutPeopleCreate_MustReceiveAuthorizationErrorOnCreatePerson()
-    {
-        var userId = Guid.NewGuid();
-        var tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-
-        var sender = Substitute.For<ISender>();
-        var permissionService = Substitute.For<IPermissionService>();
-        permissionService.HasPermissionAsync(userId, SystemPermissions.PeopleCreate, Arg.Any<CancellationToken>())
+        permissionService.HasPermissionAsync(userId, SystemPermissions.RolesManage, Arg.Any<CancellationToken>())
             .Returns(false);
 
         var executor = await BuildExecutorAsync(sender, permissionService, tenantId);
 
         var result = (await executor.ExecuteAsync(BuildRequest(
-            """
-            mutation {
-              createPerson(input: {
-                fullName: "Pessoa Sem Permissao"
-              }) {
-                id
-              }
-            }
-            """,
+            "mutation { createRole(input: { name: \"Hacker\" }) { id name } }",
             userId))).ExpectOperationResult();
 
         Assert.NotNull(result.Errors);
