@@ -39,7 +39,8 @@ public sealed class PermissionService : IPermissionService
     public async Task<bool> HasPermissionAsync(Guid userId, string permission, CancellationToken ct = default)
     {
         var permissions = await GetUserPermissionsAsync(userId, ct);
-        return permissions.Contains(permission);
+        return permissions.Any(existing =>
+            string.Equals(existing?.Trim(), permission.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
     public void InvalidateCache(Guid userId) =>
