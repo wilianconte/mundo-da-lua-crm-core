@@ -27,6 +27,24 @@
 - [ ] **Seed criado ou atualizado para a nova entidade?** ← OBRIGATÓRIO (ver regra abaixo)
 - [ ] **Seeds existentes revisados** — a mudança quebra algum seed já implementado?
 - [ ] **Skill `core` atualizada com novos conhecimentos?**
+- [ ] Permissões normalizadas no backend (`Trim + ToLowerInvariant + remove vazios/duplicados`)?
+- [ ] Regressão RBAC non-admin com e sem permissão nas mutations principais coberta?
+
+---
+
+## CHECKLIST RBAC POR ENTIDADE (MUTATIONS)
+
+- [ ] `students`: create/update/delete com autorização validada
+- [ ] `student_guardians`: create/update/delete com autorização validada
+- [ ] `student_courses`: create/update/delete com autorização validada
+- [ ] `customers`: create/update/delete com autorização validada
+- [ ] `employees`: create/update/delete com autorização validada
+- [ ] `courses`: create/update/delete com autorização validada
+- [ ] `people`: create/update/delete com autorização validada
+- [ ] `companies`: create/update/delete com autorização validada
+- [ ] `users`: create/update/delete com `users:manage`
+- [ ] `roles`: create/update/delete com `roles:manage`
+- [ ] Guardas de cross-contamination entre entidades/permissões críticas validados
 
 ---
 

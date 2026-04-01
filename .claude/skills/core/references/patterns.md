@@ -542,6 +542,14 @@ Regras:
 - Policies sao registradas automaticamente a partir de `SystemPermissions.All` em `Program.cs`.
 - Toda nova permissao precisa ser adicionada em `SystemPermissions` e em `SystemPermissions.All`.
 - Nao fazer verificacao manual por `IHttpContextAccessor` dentro de resolver para autorizacao.
+- Normalizar permissoes ao carregar/cachear e ao validar:
+1. `Trim()`
+2. `ToLowerInvariant()`
+3. Remover valores vazios e duplicados
+- Para suites de regressao RBAC em mutations principais, garantir cenarios non-admin:
+1. com permissao correta (sucesso)
+2. sem permissao (AUTH_NOT_AUTHORIZED)
+3. sem vazamento entre policies de entidades diferentes
 
 ---
 

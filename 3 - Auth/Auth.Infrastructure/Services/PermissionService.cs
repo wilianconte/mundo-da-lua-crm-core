@@ -31,16 +31,24 @@ public sealed class PermissionService : IPermissionService
         var user = await _userRepository.GetByIdWithRolesAsync(userId, ct);
         var roleIds = user?.UserRoles.Select(r => r.RoleId).ToList() ?? [];
         var permissions = await _permissionRepository.GetPermissionNamesByRoleIdsAsync(roleIds, ct);
+        var normalizedPermissions = permissions
+            .Where(static p => !string.IsNullOrWhiteSpace(p))
+            .Select(static p => p.Trim().ToLowerInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
 
-        _cache.Set(CacheKey(userId), permissions, CacheTtl);
-        return permissions;
+        _cache.Set(CacheKey(userId), normalizedPermissions, CacheTtl);
+        return normalizedPermissions;
     }
 
     public async Task<bool> HasPermissionAsync(Guid userId, string permission, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(permission))
+            return false;
+
+        var normalizedPermission = permission.Trim().ToLowerInvariant();
         var permissions = await GetUserPermissionsAsync(userId, ct);
-        return permissions.Any(existing =>
-            string.Equals(existing?.Trim(), permission.Trim(), StringComparison.OrdinalIgnoreCase));
+        return permissions.Contains(normalizedPermission, StringComparer.Ordinal);
     }
 
     public void InvalidateCache(Guid userId) =>
