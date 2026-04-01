@@ -103,6 +103,85 @@ public sealed class PermissionServiceTests
         Assert.Empty(result);
     }
 
+    // ─── NORMALIZATION REGRESSION TESTS ────────────────────────────────────
+    // Guard against the bug where extra whitespace or different casing in the
+    // stored permission name caused HasPermissionAsync to silently deny valid users.
+
+    [Fact]
+    public async Task HasPermission_StoredWithExtraWhitespace_ReturnsTrue()
+    {
+        var user = CreateUserWithRole(_userId, _roleId);
+        _userRepo.GetByIdWithRolesAsync(_userId, default).Returns(user);
+        _permissionRepo.GetPermissionNamesByRoleIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns(["  students:read  "]);   // stored with surrounding whitespace
+
+        var result = await _service.HasPermissionAsync(_userId, "students:read");
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasPermission_CheckedWithExtraWhitespace_ReturnsTrue()
+    {
+        var user = CreateUserWithRole(_userId, _roleId);
+        _userRepo.GetByIdWithRolesAsync(_userId, default).Returns(user);
+        _permissionRepo.GetPermissionNamesByRoleIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns(["students:read"]);
+
+        var result = await _service.HasPermissionAsync(_userId, "  students:read  "); // check with whitespace
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasPermission_StoredWithDifferentCasing_ReturnsTrue()
+    {
+        var user = CreateUserWithRole(_userId, _roleId);
+        _userRepo.GetByIdWithRolesAsync(_userId, default).Returns(user);
+        _permissionRepo.GetPermissionNamesByRoleIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns(["Students:Read"]);   // stored with mixed casing
+
+        var result = await _service.HasPermissionAsync(_userId, "students:read");
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasPermission_CheckedWithDifferentCasing_ReturnsTrue()
+    {
+        var user = CreateUserWithRole(_userId, _roleId);
+        _userRepo.GetByIdWithRolesAsync(_userId, default).Returns(user);
+        _permissionRepo.GetPermissionNamesByRoleIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns(["students:read"]);
+
+        var result = await _service.HasPermissionAsync(_userId, "STUDENTS:READ"); // check with uppercase
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task GetUserPermissions_NormalizesAndDeduplicatesBeforeCaching()
+    {
+        var user = CreateUserWithRole(_userId, _roleId);
+        _userRepo.GetByIdWithRolesAsync(_userId, default).Returns(user);
+        _permissionRepo.GetPermissionNamesByRoleIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default)
+            .Returns([" Students:Read ", "students:read", "COURSES:READ", " "]);
+
+        var result = await _service.GetUserPermissionsAsync(_userId);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains("students:read", result);
+        Assert.Contains("courses:read", result);
+    }
+
+    [Fact]
+    public async Task HasPermission_BlankRequestedPermission_ReturnsFalse()
+    {
+        var result = await _service.HasPermissionAsync(_userId, " ");
+
+        Assert.False(result);
+    }
+
     private static User CreateUserWithRole(Guid userId, params Guid[] roleIds)
     {
         var user = User.Create(Guid.NewGuid(), "Test User", "test@test.com", "hash");

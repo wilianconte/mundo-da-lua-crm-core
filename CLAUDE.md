@@ -74,6 +74,18 @@ Consulte `.claude/skills/core/SKILL.md` e seus `references/` para regras detalha
 2. Adicionar em `SystemPermissions.All` com grupo.
 3. Aplicar a policy nos resolvers de query/mutation.
 - Manter `Login` e `RefreshToken` como `[AllowAnonymous]`.
+- Normalizar permissões no serviço antes de comparar/cachear:
+1. `Trim()`
+2. `ToLowerInvariant()`
+3. Remover entradas vazias e duplicadas
+
+### Cobertura obrigatória de autorização (regressão)
+
+- Para mutations principais de cada entidade, cobrir:
+1. non-admin com permissão correta => sucesso
+2. non-admin sem permissão => `AUTH_NOT_AUTHORIZED`
+3. sem vazamento entre policies (`cross-contamination guard`)
+- Entidades obrigatórias: `students`, `student_guardians`, `student_courses`, `customers`, `employees`, `courses`, `people`, `companies`, `users/roles`.
 
 ### Permissões por domínio (convencão)
 
