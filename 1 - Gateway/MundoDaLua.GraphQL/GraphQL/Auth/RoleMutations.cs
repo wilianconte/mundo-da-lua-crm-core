@@ -9,10 +9,10 @@ using MyCRM.Shared.Kernel;
 
 namespace MyCRM.GraphQL.GraphQL.Auth;
 
-[Authorize(Policy = SystemPermissions.RolesManage)]
 [MutationType]
 public sealed class RoleMutations
 {
+    [Authorize(Policy = SystemPermissions.RolesManage)]
     public async Task<RoleDto> CreateRoleAsync(
         CreateRoleInput input,
         [Service] ISender sender,
@@ -26,6 +26,7 @@ public sealed class RoleMutations
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.RolesManage)]
     public async Task<RoleDto> UpdateRoleAsync(
         Guid id,
         UpdateRoleInput input,
@@ -40,6 +41,7 @@ public sealed class RoleMutations
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.RolesManage)]
     public async Task<bool> DeleteRoleAsync(
         Guid id,
         [Service] ISender sender,
@@ -53,6 +55,7 @@ public sealed class RoleMutations
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
 
+    [Authorize(Policy = SystemPermissions.RolesManage)]
     public async Task<RoleDto> UpdateRolePermissionsAsync(
         Guid roleId,
         IReadOnlyList<Guid> permissionIds,
