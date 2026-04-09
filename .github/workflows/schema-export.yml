@@ -48,8 +48,9 @@ jobs:
           dotnet run \
             --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj" \
             --no-build \
+            --no-launch-profile \
             --configuration Release \
-            -- --export-schema --output contracts/schema.graphql
+            -- --export-schema --output "$GITHUB_WORKSPACE/contracts/schema.graphql"
 
       - name: Upload schema artifact
         uses: actions/upload-artifact@v4
