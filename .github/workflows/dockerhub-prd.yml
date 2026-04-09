@@ -93,9 +93,9 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          IMAGE="$REGISTRY_USER/mundo-da-lua-crm-prd:${GITHUB_SHA:0:7}"
+          IMAGE="$REGISTRY_USER/mundo-da-lua-crm-core:${GITHUB_SHA:0:7}"
           echo "Aplicando imagem: $IMAGE"
-          kubectl set image deployment/mundo-da-lua-crm-prd \
+          kubectl set image deployment/mundo-da-lua-crm-core \
             mundo-da-lua-crm-core=$IMAGE \
             -n mundo-da-lua-crm-prd
           kubectl rollout status deployment/mundo-da-lua-crm-core \
