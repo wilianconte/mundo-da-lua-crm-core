@@ -20,6 +20,16 @@ using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
 
+// Modo de exportação de schema — sem DB, sem JWT, sem infraestrutura.
+// Usado no CI/CD para gerar contracts/schema.graphql.
+if (args.Contains("--export-schema"))
+{
+    var outputPath = args.SkipWhile(a => a != "--output").Skip(1).FirstOrDefault()
+        ?? "schema.graphql";
+    await MyCRM.GraphQL.Extensions.SchemaExporter.ExportAsync(outputPath);
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((ctx, cfg) =>
