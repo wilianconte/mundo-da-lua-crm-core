@@ -16,6 +16,7 @@ using MyCRM.GraphQL.GraphQL.Students.Types;
 using MyCRM.Shared.Kernel;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
+using HotChocolate.Execution;
 using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -181,7 +182,18 @@ app.UseMiddleware<TenantMiddleware>();
 
 app.MapGraphQL().RequireRateLimiting("graphql");
 
+// Expõe o schema SDL em /contracts/schema.graphql para consumo pelo front-end (codegen).
+// Segue a mesma política da introspection: desabilitado fora de Development
+// para não vazar o contrato em produção.
 if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/contracts/schema.graphql", async (IRequestExecutorResolver resolver) =>
+    {
+        var executor = await resolver.GetRequestExecutorAsync();
+        return Results.Content(executor.Schema.ToString(), "text/plain; charset=utf-8");
+    });
+
     app.MapGet("/", () => Results.Redirect("/graphql"));
+}
 
 app.Run();
