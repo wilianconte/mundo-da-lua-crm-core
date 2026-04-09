@@ -56,11 +56,18 @@ public static class MigrationExtensions
         await db.Database.OpenConnectionAsync();
         var connection = db.Database.GetDbConnection();
 
-        await using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}')";
-        var exists = (bool)(await cmd.ExecuteScalarAsync() ?? false);
+        await using var checkTable = connection.CreateCommand();
+        checkTable.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}')";
+        var tableExists = (bool)(await checkTable.ExecuteScalarAsync() ?? false);
 
-        if (!exists)
+        if (tableExists)
+            return;
+
+        await using var checkHistory = connection.CreateCommand();
+        checkHistory.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '__EFMigrationsHistory')";
+        var historyExists = (bool)(await checkHistory.ExecuteScalarAsync() ?? false);
+
+        if (historyExists)
             await db.Database.ExecuteSqlRawAsync($"DELETE FROM \"{schema}\".\"__EFMigrationsHistory\"");
     }
 }
