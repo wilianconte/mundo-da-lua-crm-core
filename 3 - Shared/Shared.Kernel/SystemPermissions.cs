@@ -44,6 +44,7 @@ public static class SystemPermissions
 
     public const string UsersManage = "users:manage";
     public const string RolesManage = "roles:manage";
+    public const string TenantsManage = "tenants:manage";
 
     public static IReadOnlyList<(string Name, string Group)> All =>
     [
@@ -79,7 +80,8 @@ public static class SystemPermissions
         (CompaniesCreate, "Empresas"),
         (CompaniesUpdate, "Empresas"),
         (CompaniesDelete, "Empresas"),
-        (UsersManage, "Administração"),
-        (RolesManage, "Administração"),
+        (UsersManage,   "Administração"),
+        (RolesManage,   "Administração"),
+        (TenantsManage, "Administração"),
     ];
 }
