@@ -1,0 +1,68 @@
+name: Schema Export
+
+# Exporta o schema GraphQL em SDL e commita em contracts/schema.graphql.
+# O front-end consome esse arquivo como fonte de verdade para o codegen,
+# sem depender do endpoint ao vivo.
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+jobs:
+  export:
+    name: Export GraphQL Schema
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Necessário para poder commitar de volta
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore MyCRM.sln
+
+      - name: Build
+        run: dotnet build MyCRM.sln --no-restore --configuration Release
+
+      - name: Export schema
+        run: |
+          dotnet run \
+            --project "1 - Gateway/MundoDaLua.GraphQL/MyCRM.GraphQL.csproj" \
+            --no-build \
+            --configuration Release \
+            -- --export-schema --output contracts/schema.graphql
+
+      - name: Upload schema artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphql-schema-${{ github.ref_name }}
+          path: contracts/schema.graphql
+          retention-days: 90
+
+      - name: Commit schema to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add contracts/schema.graphql
+          git diff --staged --quiet && echo "Schema sem alterações." && exit 0
+          git commit -m "chore: atualizar contracts/schema.graphql [skip ci]"
+          git push
