@@ -16,6 +16,7 @@ using MyCRM.GraphQL.GraphQL.Students.Types;
 using MyCRM.Shared.Kernel;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
+using HotChocolate.Execution;
 using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -180,6 +181,28 @@ app.UseAuthorization();
 app.UseMiddleware<TenantMiddleware>();
 
 app.MapGraphQL().RequireRateLimiting("graphql");
+
+// Expõe o schema SDL em /contracts/schema.graphql para consumo pelo front-end (codegen).
+// Em Development: livre.
+// Em outros ambientes: exige Authorization: Bearer <SchemaExport:Token>.
+// Se SchemaExport:Token não estiver configurado fora de Development, o endpoint retorna 404.
+var schemaExportToken = app.Configuration["SchemaExport:Token"];
+
+app.MapGet("/contracts/schema.graphql", async (HttpContext ctx, IRequestExecutorResolver resolver) =>
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        if (string.IsNullOrWhiteSpace(schemaExportToken))
+            return Results.NotFound();
+
+        var auth = ctx.Request.Headers.Authorization.ToString();
+        if (auth != $"Bearer {schemaExportToken}")
+            return Results.Unauthorized();
+    }
+
+    var executor = await resolver.GetRequestExecutorAsync();
+    return Results.Content(executor.Schema.ToString(), "text/plain; charset=utf-8");
+});
 
 if (app.Environment.IsDevelopment())
     app.MapGet("/", () => Results.Redirect("/graphql"));
