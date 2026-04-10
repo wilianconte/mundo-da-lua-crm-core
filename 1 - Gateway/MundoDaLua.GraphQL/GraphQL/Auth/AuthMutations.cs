@@ -3,6 +3,7 @@ using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.Commands.Users.DeleteUser;
 using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.Commands.Login;
+using MyCRM.Auth.Application.Commands.LoginByEmail;
 using MyCRM.Auth.Application.Commands.RefreshToken;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth.Inputs;
@@ -72,6 +73,20 @@ public class AuthMutations
     public async Task<LoginDto> LoginAsync(LoginInput input, [Service] IMediator mediator, CancellationToken ct)
     {
         var result = await mediator.Send(new LoginCommand(input.TenantId, input.Email, input.Password), ct);
+        return result.IsSuccess
+            ? result.Value!
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    /// <summary>
+    /// Autentica o usuário usando apenas email e senha, resolvendo o tenantId automaticamente.
+    /// Útil quando o cliente não possui o tenantId previamente.
+    /// </summary>
+    [AllowAnonymous]
+    public async Task<LoginDto> LoginByEmailAsync(LoginByEmailInput input, [Service] IMediator mediator, CancellationToken ct)
+    {
+        var result = await mediator.Send(new LoginByEmailCommand(input.Email, input.Password), ct);
         return result.IsSuccess
             ? result.Value!
             : throw new GraphQLException(result.Errors.Select(e =>
