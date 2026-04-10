@@ -14,7 +14,7 @@ public sealed class CRMDbContextFactory : IDesignTimeDbContextFactory<CRMDbConte
     public CRMDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<CRMDbContext>()
-            .UseNpgsql("Host=localhost;Database=mycrm_crm;Username=postgres;Password=postgres")
+            .UseNpgsql("Host=localhost;Database=mycrm;Username=postgres;Password=postgres")
             .Options;
 
         return new CRMDbContext(options, new DesignTimeTenantService(), new DesignTimeCurrentUserService());
