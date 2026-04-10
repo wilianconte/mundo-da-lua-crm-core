@@ -6,6 +6,7 @@ public record UserDto(
     string Name,
     string Email,
     bool IsActive,
+    bool IsAdmin,
     Guid? PersonId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,

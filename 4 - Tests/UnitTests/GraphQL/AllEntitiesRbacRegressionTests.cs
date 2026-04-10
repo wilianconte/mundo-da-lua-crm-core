@@ -1090,7 +1090,7 @@ public sealed class AllEntitiesRbacRegressionTests
     {
         var userId = Guid.NewGuid();
         var dto = new UserDto(
-            Guid.NewGuid(), TenantId, "User Test", "user@test.com", true,
+            Guid.NewGuid(), TenantId, "User Test", "user@test.com", true, false,
             null, DateTimeOffset.UtcNow, null, null, null);
 
         var mediator = Substitute.For<IMediator>();
@@ -1133,7 +1133,7 @@ public sealed class AllEntitiesRbacRegressionTests
     {
         var userId = Guid.NewGuid();
         var dto = new UserDto(
-            Guid.NewGuid(), TenantId, "User Updated", "updated@test.com", true,
+            Guid.NewGuid(), TenantId, "User Updated", "updated@test.com", true, false,
             null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, null);
 
         var mediator = Substitute.For<IMediator>();

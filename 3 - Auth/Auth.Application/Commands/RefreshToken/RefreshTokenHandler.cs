@@ -66,7 +66,8 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             user.Name,
             user.Email,
             rawRefreshToken,
-            refreshExpiresAt));
+            refreshExpiresAt,
+            user.IsAdmin));
     }
 
     private static string ComputeHash(string rawToken)

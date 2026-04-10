@@ -7,4 +7,5 @@ public record LoginDto(
     string Name,
     string Email,
     string RefreshToken,
-    DateTimeOffset RefreshTokenExpiresAt);
+    DateTimeOffset RefreshTokenExpiresAt,
+    bool IsAdmin);

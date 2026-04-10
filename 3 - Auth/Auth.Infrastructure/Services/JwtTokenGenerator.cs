@@ -26,6 +26,7 @@ public sealed class JwtTokenGenerator : ITokenGenerator
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("tenant_id", user.TenantId.ToString()),
             new Claim("name", user.Name),
+            new Claim("is_admin", user.IsAdmin ? "true" : "false"),
         };
 
         var token = new JwtSecurityToken(

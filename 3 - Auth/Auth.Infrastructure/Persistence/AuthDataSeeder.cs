@@ -112,6 +112,8 @@ public static class AuthDataSeeder
                 user.LinkToPerson(adminPersonId.Value);
         }
 
+        user.SetAdmin();
+
         await db.SaveChangesAsync();
 
         // Garante que o role Administrador está atribuído

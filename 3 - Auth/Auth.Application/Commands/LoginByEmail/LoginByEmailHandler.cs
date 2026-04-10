@@ -78,6 +78,7 @@ public sealed class LoginByEmailHandler : IRequestHandler<LoginByEmailCommand, R
             user.Name,
             user.Email,
             rawRefreshToken,
-            refreshExpiresAt));
+            refreshExpiresAt,
+            user.IsAdmin));
     }
 }

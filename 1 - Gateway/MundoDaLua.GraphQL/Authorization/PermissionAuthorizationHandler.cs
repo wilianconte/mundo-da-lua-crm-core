@@ -23,6 +23,13 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         if (userId is null || !Guid.TryParse(userId, out var userGuid))
             return;
 
+        var isAdmin = context.User.FindFirstValue("is_admin") == "true";
+        if (isAdmin)
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
         var has = await _permissionService.HasPermissionAsync(userGuid, requirement.Permission);
         if (has)
             context.Succeed(requirement);
