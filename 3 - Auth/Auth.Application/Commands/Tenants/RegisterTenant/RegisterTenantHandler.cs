@@ -14,6 +14,7 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
     private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly IPermissionRepository _permissionRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantService _tenantService;
     private readonly ICrmTenantProvisioningService _crmProvisioning;
@@ -22,16 +23,18 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         ITenantRepository tenantRepository,
         IUserRepository userRepository,
         IRoleRepository roleRepository,
+        IPermissionRepository permissionRepository,
         IPasswordHasher passwordHasher,
         ITenantService tenantService,
         ICrmTenantProvisioningService crmProvisioning)
     {
-        _tenantRepository = tenantRepository;
-        _userRepository   = userRepository;
-        _roleRepository   = roleRepository;
-        _passwordHasher   = passwordHasher;
-        _tenantService    = tenantService;
-        _crmProvisioning  = crmProvisioning;
+        _tenantRepository     = tenantRepository;
+        _userRepository       = userRepository;
+        _roleRepository       = roleRepository;
+        _permissionRepository = permissionRepository;
+        _passwordHasher       = passwordHasher;
+        _tenantService        = tenantService;
+        _crmProvisioning      = crmProvisioning;
     }
 
     public async Task<Result<TenantDto>> Handle(RegisterTenantCommand request, CancellationToken ct)
@@ -74,11 +77,14 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         await _tenantRepository.AddAsync(tenant, ct);
         await _tenantRepository.SaveChangesAsync(ct);
 
-        // 3. Cria o Role "Administrador" para o novo tenant
+        // 3. Cria o Role "Administrador" para o novo tenant e atribui todas as permissões
         var adminRole = Role.Create(
             tenantId:    newTenantId,
             name:        "Administrador",
             description: "Acesso total ao sistema.");
+
+        var allPermissions = await _permissionRepository.GetAllAsync(ct);
+        adminRole.SyncPermissions(allPermissions.Select(p => p.Id).ToList());
 
         await _roleRepository.AddAsync(adminRole, ct);
         await _roleRepository.SaveChangesAsync(ct);
