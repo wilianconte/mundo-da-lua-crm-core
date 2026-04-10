@@ -52,6 +52,9 @@ public sealed class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Resul
 
         user.UpdateProfile(request.Name, request.Email, request.PersonId, request.IsActive);
 
+        if (request.IsAdmin) user.SetAdmin();
+        else user.UnsetAdmin();
+
         if (!string.IsNullOrWhiteSpace(request.Password))
             user.UpdatePassword(_passwordHasher.Hash(request.Password));
 

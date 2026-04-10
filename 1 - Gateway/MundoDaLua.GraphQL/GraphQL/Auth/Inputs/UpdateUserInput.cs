@@ -5,6 +5,7 @@ public record UpdateUserInput(
     string Email,
     Guid? PersonId,
     bool IsActive,
+    bool IsAdmin,
     string? Password,
     IReadOnlyList<Guid>? RoleIds = null
 );

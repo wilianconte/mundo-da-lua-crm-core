@@ -10,6 +10,7 @@ public record UpdateUserCommand(
     string Email,
     Guid? PersonId,
     bool IsActive,
+    bool IsAdmin,
     string? Password,
     IReadOnlyList<Guid>? RoleIds = null
 ) : IRequest<Result<UserDto>>;
