@@ -46,6 +46,7 @@ public class AuthMutations
             input.Email,
             input.PersonId,
             input.IsActive,
+            input.IsAdmin,
             input.Password,
             input.RoleIds), ct);
 

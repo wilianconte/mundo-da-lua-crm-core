@@ -13,6 +13,7 @@ public sealed class UserObjectType : ObjectType<User>
         descriptor.Field(x => x.Name);
         descriptor.Field(x => x.Email);
         descriptor.Field(x => x.IsActive);
+        descriptor.Field(x => x.IsAdmin);
         descriptor.Field(x => x.CreatedAt);
         descriptor.Field(x => x.UpdatedAt);
         descriptor.Field(x => x.CreatedBy);
