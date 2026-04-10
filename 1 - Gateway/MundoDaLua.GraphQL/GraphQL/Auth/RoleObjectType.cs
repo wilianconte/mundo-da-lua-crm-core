@@ -37,6 +37,19 @@ public sealed class RoleObjectType : ObjectType<Role>
                         rp.Permission.IsActive))
                     .ToListAsync(context.RequestAborted);
             });
+        descriptor
+            .Field("usersCount")
+            .Type<NonNullType<IntType>>()
+            .Resolve(async context =>
+            {
+                var db = context.Service<AuthDbContext>();
+                var role = context.Parent<Role>();
+
+                return await db.UserRoles
+                    .AsNoTracking()
+                    .CountAsync(ur => ur.RoleId == role.Id, context.RequestAborted);
+            });
+
         descriptor.Ignore(x => x.TenantId);
         descriptor.Ignore(x => x.IsDeleted);
         descriptor.Ignore(x => x.DeletedAt);
