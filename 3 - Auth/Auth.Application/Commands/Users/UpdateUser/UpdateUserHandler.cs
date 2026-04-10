@@ -68,6 +68,7 @@ public sealed class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Resul
             user.Name,
             user.Email,
             user.IsActive,
+            user.IsAdmin,
             user.PersonId,
             user.CreatedAt,
             user.UpdatedAt,

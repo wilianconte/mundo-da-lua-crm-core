@@ -64,6 +64,7 @@ public sealed class CreateUserHandler : IRequestHandler<CreateUserCommand, Resul
             user.Name,
             user.Email,
             user.IsActive,
+            user.IsAdmin,
             user.PersonId,
             user.CreatedAt,
             user.UpdatedAt,

@@ -80,6 +80,7 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginDto
             user.Name,
             user.Email,
             rawRefreshToken,
-            refreshExpiresAt));
+            refreshExpiresAt,
+            user.IsAdmin));
     }
 }

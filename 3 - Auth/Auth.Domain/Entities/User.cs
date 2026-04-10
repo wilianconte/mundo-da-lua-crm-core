@@ -8,6 +8,7 @@ public class User : TenantEntity
     public string PasswordHash { get; private set; } = default!;
     public string Name { get; private set; } = default!;
     public bool IsActive { get; private set; }
+    public bool IsAdmin { get; private set; }
 
     private readonly List<UserRole> _userRoles = [];
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
@@ -78,4 +79,7 @@ public class User : TenantEntity
 
     public void Deactivate() { IsActive = false; Touch(); }
     public void Activate() { IsActive = true; Touch(); }
+
+    public void SetAdmin() { IsAdmin = true; Touch(); }
+    public void UnsetAdmin() { IsAdmin = false; Touch(); }
 }
