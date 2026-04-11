@@ -11,8 +11,6 @@ using MyCRM.GraphQL.Extensions;
 using MyCRM.GraphQL.Middleware;
 using MyCRM.GraphQL.MultiTenancy;
 using MyCRM.GraphQL.Services;
-using MyCRM.GraphQL.GraphQL.Enums;
-using MyCRM.GraphQL.GraphQL.Students.Types;
 using MyCRM.Shared.Kernel;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
@@ -122,38 +120,8 @@ builder.Services
     .AddGraphQLServer()
     .AddQueryType()
     .AddMutationType()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Customers.CustomerQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Customers.CustomerMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.People.PersonQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.People.PersonMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Companies.CompanyMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.AuthMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.UserQueries>()
-    .AddType<MyCRM.GraphQL.GraphQL.Auth.UserObjectType>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.RoleMutations>()
-    .AddType<MyCRM.GraphQL.GraphQL.Auth.RoleObjectType>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.PermissionQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Auth.PermissionAdminQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Students.StudentObjectTypeExtension>()
-    .AddType<StudentEnrollmentStatusType>()
-    .AddType<StudentCourseStatusType>()
-    .AddType<StudentFilterType>()
-    .AddType<StudentSortType>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentGuardians.StudentGuardianMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Courses.CourseQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Courses.CourseMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentCourses.StudentCourseQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentCourses.StudentCourseMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeMutations>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Tenants.TenantQueries>()
-    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Tenants.TenantMutations>()
-    .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
+    .AddCrmGraphQL()
+    .AddAuthGraphQL()
     .AddAuthorization()
     .AddFiltering()
     .AddSorting()
