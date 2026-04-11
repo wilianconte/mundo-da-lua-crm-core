@@ -538,7 +538,7 @@ public sealed class StudentMutations
 ```
 
 Regras:
-- Login e refresh token permanecem `[AllowAnonymous]`.
+- `Login`, `RefreshToken` e `RegisterTenant` permanecem `[AllowAnonymous]` — únicas mutations públicas.
 - Policies sao registradas automaticamente a partir de `SystemPermissions.All` em `Program.cs`.
 - Toda nova permissao precisa ser adicionada em `SystemPermissions` e em `SystemPermissions.All`.
 - Nao fazer verificacao manual por `IHttpContextAccessor` dentro de resolver para autorizacao.
@@ -616,7 +616,7 @@ curl -s -X POST http://localhost:5095/graphql \
 
 Quando novas mutations forem adicionadas em `AuthMutations`:
 
-- manter `Login` com `[AllowAnonymous]`;
+- manter `Login`, `RefreshToken` e `RegisterTenant` com `[AllowAnonymous]`;
 - aplicar `[Authorize]` nas mutations sensiveis (ex.: `CreateUserAsync`);
 - manter tratamento padrao de erro com `GraphQLException` + `extensions.code`.
 
