@@ -156,4 +156,5 @@ Toda nova entidade deve ter todos os artefatos abaixo antes de ser considerada c
 | `StudentGuardian` | ✅ | ✅ | ✅ | ✅ |
 | `StudentCourse` | ✅ | ✅ | ✅ | ✅ |
 | `Employee` | ✅ | ✅ | ✅ | ✅ |
+| `Tenant` | ✅ (Register/Update/Delete) | ✅ | ✅ | ✅ (via AuthDataSeeder) |
 

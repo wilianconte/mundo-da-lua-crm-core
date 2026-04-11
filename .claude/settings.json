@@ -1,5 +1,21 @@
 {
   "permissions": {
     "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(gh pr create*)",
+            "command": "cd \"D:/Dev/Mundo da Lua/mundo-da-lua-crm/mundo-da-lua-crm-core\" && dotnet build MyCRM.sln --verbosity minimal && dotnet test \"4 - Tests/UnitTests/MyCRM.UnitTests.csproj\" --no-build --verbosity minimal",
+            "timeout": 300,
+            "statusMessage": "Validando build e testes antes de criar o PR..."
+          }
+        ]
+      }
+    ]
   }
 }
