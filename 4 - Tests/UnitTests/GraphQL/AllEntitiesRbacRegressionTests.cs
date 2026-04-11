@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Application.Commands.Roles.CreateRole;
 using MyCRM.Auth.Application.Commands.Roles.UpdateRole;
+using MyCRM.Auth.Application.Commands.Tenants.DeleteTenant;
+using MyCRM.Auth.Application.Commands.Tenants.UpdateTenant;
 using MyCRM.Auth.Application.Commands.Users.CreateUser;
 using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.DTOs;
@@ -36,9 +38,11 @@ using MyCRM.CRM.Application.Commands.Students.UpdateStudent;
 using MyCRM.CRM.Application.DTOs;
 using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Infrastructure.Persistence;
+using MyCRM.Auth.Domain.Entities;
 using MyCRM.GraphQL.Authorization;
 using MyCRM.GraphQL.GraphQL.Auth;
 using MyCRM.GraphQL.GraphQL.Companies;
+using MyCRM.GraphQL.GraphQL.Tenants;
 using MyCRM.GraphQL.GraphQL.Courses;
 using MyCRM.GraphQL.GraphQL.Customers;
 using MyCRM.GraphQL.GraphQL.Employees;
@@ -124,6 +128,7 @@ public sealed class AllEntitiesRbacRegressionTests
             .AddTypeExtension<CompanyMutations>()
             .AddTypeExtension<AuthMutations>()
             .AddTypeExtension<RoleMutations>()
+            .AddTypeExtension<TenantMutations>()
             .AddAuthorization()
             .AddFiltering()
             .AddSorting()
@@ -1328,6 +1333,111 @@ public sealed class AllEntitiesRbacRegressionTests
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
             "mutation { createCourse(input: { name: \"Should Fail\", type: LANGUAGE }) { course { id } } }",
+            userId))).ExpectOperationResult();
+
+        AssertAuthError(result);
+    }
+
+    // ─── TENANTS ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Tenants_WithManagePermission_MustUpdateTenant()
+    {
+        var userId = Guid.NewGuid();
+        var dto = new TenantDto(
+            Guid.NewGuid(), "Tenant Atualizado", Guid.NewGuid(), null,
+            TenantStatus.Active, TenantPlan.Basic,
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+
+        var mediator = Substitute.For<IMediator>();
+        mediator.Send(Arg.Any<UpdateTenantCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Shared.Kernel.Results.Result<TenantDto>.Success(dto));
+
+        var permissionService = Substitute.For<IPermissionService>();
+        permissionService.HasPermissionAsync(userId, SystemPermissions.TenantsManage, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var executor = await BuildExecutorAsync(mediator, permissionService);
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Tenant Atualizado\", plan: BASIC, status: ACTIVE }}) {{ tenant {{ id name }} }} }}",
+            userId))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        var payload = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(result.Data!["updateTenant"]);
+        var tenant = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(payload["tenant"]);
+        Assert.Equal(dto.Id.ToString(), tenant["id"]?.ToString());
+    }
+
+    [Fact]
+    public async Task Tenants_WithoutManagePermission_MustDenyUpdateTenant()
+    {
+        var userId = Guid.NewGuid();
+        var mediator = Substitute.For<IMediator>();
+        var permissionService = Substitute.For<IPermissionService>();
+        permissionService.HasPermissionAsync(userId, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var executor = await BuildExecutorAsync(mediator, permissionService);
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Denied\", plan: FREE, status: ACTIVE }}) {{ tenant {{ id }} }} }}",
+            userId))).ExpectOperationResult();
+
+        AssertAuthError(result);
+    }
+
+    [Fact]
+    public async Task Tenants_WithManagePermission_MustDeleteTenant()
+    {
+        var userId = Guid.NewGuid();
+        var mediator = Substitute.For<IMediator>();
+        mediator.Send(Arg.Any<DeleteTenantCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Shared.Kernel.Results.Result.Success());
+
+        var permissionService = Substitute.For<IPermissionService>();
+        permissionService.HasPermissionAsync(userId, SystemPermissions.TenantsManage, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var executor = await BuildExecutorAsync(mediator, permissionService);
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ deleteTenant(id: \"{Guid.NewGuid()}\") }}",
+            userId))).ExpectOperationResult();
+
+        Assert.Null(result.Errors);
+        Assert.True((bool)result.Data!["deleteTenant"]!);
+    }
+
+    [Fact]
+    public async Task Tenants_WithoutManagePermission_MustDenyDeleteTenant()
+    {
+        var userId = Guid.NewGuid();
+        var mediator = Substitute.For<IMediator>();
+        var permissionService = Substitute.For<IPermissionService>();
+        permissionService.HasPermissionAsync(userId, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var executor = await BuildExecutorAsync(mediator, permissionService);
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ deleteTenant(id: \"{Guid.NewGuid()}\") }}",
+            userId))).ExpectOperationResult();
+
+        AssertAuthError(result);
+    }
+
+    [Fact]
+    public async Task Tenants_WithOnlyUsersManage_MustDenyUpdateTenant()
+    {
+        var userId = Guid.NewGuid();
+        var mediator = Substitute.For<IMediator>();
+        var permissionService = Substitute.For<IPermissionService>();
+        // Has users:manage but NOT tenants:manage — must not bleed across
+        permissionService.HasPermissionAsync(userId, SystemPermissions.UsersManage, Arg.Any<CancellationToken>())
+            .Returns(true);
+        permissionService.HasPermissionAsync(userId, SystemPermissions.TenantsManage, Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var executor = await BuildExecutorAsync(mediator, permissionService);
+        var result = (await executor.ExecuteAsync(BuildRequest(
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Should Fail\", plan: FREE, status: ACTIVE }}) {{ tenant {{ id }} }} }}",
             userId))).ExpectOperationResult();
 
         AssertAuthError(result);
