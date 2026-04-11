@@ -1,14 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(powershell.exe -NoProfile -NonInteractive -Command \":*)",
-      "Bash(dotnet run:*)",
-      "Bash(taskkill /PID 9848 /F)",
-      "Bash(cmd.exe /c \"taskkill /PID 9848 /F\")",
-      "Bash(cmd.exe /c \"taskkill /IM MyCRM.GraphQL.exe /F 2>&1\")",
-      "Bash(cmd.exe /c \"tasklist | findstr MyCRM\")",
-      "Bash(powershell -Command \"Stop-Process -Id 9848 -Force -ErrorAction SilentlyContinue; Stop-Process -Name ''MyCRM.GraphQL'' -Force -ErrorAction SilentlyContinue; Write-Host ''Done''\")",
-      "Bash(powershell -Command \"Get-Process -Name ''MyCRM.GraphQL'' -ErrorAction SilentlyContinue | Select-Object Id, Name\")"
-    ]
+    "defaultMode": "bypassPermissions"
   }
 }
