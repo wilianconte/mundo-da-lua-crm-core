@@ -151,6 +151,7 @@ builder.Services
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.StudentCourses.StudentCourseMutations>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Employees.EmployeeMutations>()
+    .AddTypeExtension<MyCRM.GraphQL.GraphQL.Tenants.TenantQueries>()
     .AddTypeExtension<MyCRM.GraphQL.GraphQL.Tenants.TenantMutations>()
     .AddType<MyCRM.GraphQL.GraphQL.Customers.CustomerObjectType>()
     .AddAuthorization()
