@@ -332,7 +332,7 @@ public sealed class AuthMutationTests
         var executor = await BuildExecutorAsync(sender, mediator);
 
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateUser(id: \"{userId}\", input: {{ name: \"Maria Atualizada\", email: \"maria.atualizada@test.com\", personId: null, isActive: false, password: \"NovaSenha123!\", roleIds: [\"{roleId}\"] }}) {{ id name email isActive }} }}",
+            $"mutation {{ updateUser(id: \"{userId}\", input: {{ name: \"Maria Atualizada\", email: \"maria.atualizada@test.com\", personId: null, isActive: false, isAdmin: false, password: \"NovaSenha123!\", roleIds: [\"{roleId}\"] }}) {{ id name email isActive }} }}",
             authenticated: true))).ExpectOperationResult();
 
         Assert.Null(result.Errors);

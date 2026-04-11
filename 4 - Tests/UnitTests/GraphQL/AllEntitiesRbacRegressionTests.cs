@@ -1146,7 +1146,7 @@ public sealed class AllEntitiesRbacRegressionTests
 
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateUser(id: \"{Guid.NewGuid()}\", input: {{ name: \"User Updated\", email: \"updated@test.com\", isActive: true }}) {{ id email }} }}",
+            $"mutation {{ updateUser(id: \"{Guid.NewGuid()}\", input: {{ name: \"User Updated\", email: \"updated@test.com\", isActive: true, isAdmin: false }}) {{ id email }} }}",
             userId))).ExpectOperationResult();
 
         Assert.Null(result.Errors);
@@ -1165,7 +1165,7 @@ public sealed class AllEntitiesRbacRegressionTests
 
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateUser(id: \"{Guid.NewGuid()}\", input: {{ name: \"Denied\", email: \"denied@test.com\", isActive: true }}) {{ id }} }}",
+            $"mutation {{ updateUser(id: \"{Guid.NewGuid()}\", input: {{ name: \"Denied\", email: \"denied@test.com\", isActive: true, isAdmin: false }}) {{ id }} }}",
             userId))).ExpectOperationResult();
 
         AssertAuthError(result);
