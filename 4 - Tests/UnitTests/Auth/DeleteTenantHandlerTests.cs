@@ -49,4 +49,17 @@ public sealed class DeleteTenantHandlerTests
         _repository.DidNotReceive().Delete(Arg.Any<Tenant>());
         await _repository.DidNotReceive().SaveChangesAsync(default);
     }
+
+    [Fact]
+    public async Task Handle_ExistingTenant_SoftDeletesEntity()
+    {
+        var tenant = Tenant.Create("Acme Ltda", Guid.NewGuid());
+        _repository.GetByIdAsync(tenant.Id, default).Returns(tenant);
+        _repository.When(r => r.Delete(Arg.Any<Tenant>())).Do(ci => ci.Arg<Tenant>().SoftDelete());
+
+        await _handler.Handle(new DeleteTenantCommand(tenant.Id), default);
+
+        Assert.True(tenant.IsDeleted);
+        Assert.NotNull(tenant.DeletedAt);
+    }
 }

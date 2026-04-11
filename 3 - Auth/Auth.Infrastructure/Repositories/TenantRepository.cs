@@ -17,7 +17,7 @@ public sealed class TenantRepository : ITenantRepository
         await _db.Tenants.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync(ct);
 
     public async Task<Tenant?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
+        await _db.Tenants.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
 
     public async Task<bool> NameExistsAsync(string name, Guid? excludeId = null, CancellationToken ct = default) =>
         await _db.Tenants.AnyAsync(x =>
