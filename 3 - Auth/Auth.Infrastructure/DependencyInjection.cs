@@ -3,9 +3,11 @@ using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Auth.Infrastructure.Persistence;
 using MyCRM.Auth.Infrastructure.Repositories;
 using MyCRM.Auth.Infrastructure.Services;
+using MyCRM.Shared.Kernel.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Resend;
 
 namespace MyCRM.Auth.Infrastructure;
 
@@ -29,6 +31,17 @@ public static class DependencyInjection
         services.AddSingleton<IRefreshTokenGenerator, RefreshTokenGenerator>();
         services.AddMemoryCache();
         services.AddSingleton<ILoginAttemptTracker, MemoryCacheLoginAttemptTracker>();
+
+        // Email
+        services.Configure<ResendSettings>(configuration.GetSection("Resend"));
+        services.Configure<ResendClientOptions>(o =>
+        {
+            o.ApiToken = configuration["Resend:ApiKey"] ?? string.Empty;
+        });
+        services.AddOptions();
+        services.AddHttpClient<ResendClient>();
+        services.AddTransient<IResend, ResendClient>();
+        services.AddTransient<IEmailSender, ResendEmailSender>();
 
         return services;
     }
