@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Domain.Entities;
@@ -18,6 +19,8 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantService _tenantService;
     private readonly ICrmTenantProvisioningService _crmProvisioning;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<RegisterTenantHandler> _logger;
 
     public RegisterTenantHandler(
         ITenantRepository tenantRepository,
@@ -26,7 +29,9 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         IPermissionRepository permissionRepository,
         IPasswordHasher passwordHasher,
         ITenantService tenantService,
-        ICrmTenantProvisioningService crmProvisioning)
+        ICrmTenantProvisioningService crmProvisioning,
+        IEmailSender emailSender,
+        ILogger<RegisterTenantHandler> logger)
     {
         _tenantRepository     = tenantRepository;
         _userRepository       = userRepository;
@@ -35,6 +40,8 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         _passwordHasher       = passwordHasher;
         _tenantService        = tenantService;
         _crmProvisioning      = crmProvisioning;
+        _emailSender          = emailSender;
+        _logger               = logger;
     }
 
     public async Task<Result<TenantDto>> Handle(RegisterTenantCommand request, CancellationToken ct)
@@ -102,6 +109,27 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
 
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
+
+        // 5. Envia email de boas-vindas (falha não impede o registro)
+        try
+        {
+            var htmlBody = $"""
+                <h1>Bem-vindo ao Mundo da Lua CRM, {request.AdminName}!</h1>
+                <p>Sua empresa <strong>{request.CompanyLegalName}</strong> foi registrada com sucesso.</p>
+                <p>Você já pode acessar o sistema com o e-mail <strong>{request.AdminEmail}</strong>.</p>
+                <p>Qualquer dúvida, entre em contato com o suporte.</p>
+                """;
+
+            await _emailSender.SendAsync(new EmailMessage(
+                To:       request.AdminEmail,
+                Subject:  $"Bem-vindo ao Mundo da Lua CRM — {request.CompanyLegalName}",
+                HtmlBody: htmlBody,
+                ToName:   request.AdminName), ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao enviar email de boas-vindas para {Email}", request.AdminEmail);
+        }
 
         return Result<TenantDto>.Success(new TenantDto(
             tenant.Id,
