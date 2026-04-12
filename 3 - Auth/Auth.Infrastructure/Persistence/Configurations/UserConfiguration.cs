@@ -22,6 +22,10 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.PersonId);
 
+        builder.Property(x => x.PasswordResetToken).HasMaxLength(128);
+        builder.Property(x => x.PasswordResetTokenExpiresAt);
+        builder.HasIndex(x => x.PasswordResetToken).IsUnique().HasFilter("\"PasswordResetToken\" IS NOT NULL");
+
         builder.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
         builder.HasIndex(x => x.IsDeleted);
 

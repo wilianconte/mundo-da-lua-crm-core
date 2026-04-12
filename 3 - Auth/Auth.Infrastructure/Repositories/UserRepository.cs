@@ -46,4 +46,8 @@ public sealed class UserRepository : IUserRepository
                 && x.PersonId == personId
                 && (excludeUserId == null || x.Id != excludeUserId.Value),
             ct);
+
+    public async Task<User?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default) =>
+        await _db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.PasswordResetToken == token && !x.IsDeleted, ct);
 }
