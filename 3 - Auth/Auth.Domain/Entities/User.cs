@@ -77,6 +77,29 @@ public class User : TenantEntity
         Touch();
     }
 
+    public string? PasswordResetToken { get; private set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; private set; }
+
+    public void SetPasswordResetToken(string token, DateTime expiresAt)
+    {
+        PasswordResetToken = token;
+        PasswordResetTokenExpiresAt = expiresAt;
+        Touch();
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetToken = null;
+        PasswordResetTokenExpiresAt = null;
+        Touch();
+    }
+
+    public void ResetPassword(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
+        ClearPasswordResetToken();
+    }
+
     public void Deactivate() { IsActive = false; Touch(); }
     public void Activate() { IsActive = true; Touch(); }
 

@@ -31,6 +31,8 @@ public static class DependencyInjection
         services.AddSingleton<IRefreshTokenGenerator, RefreshTokenGenerator>();
         services.AddMemoryCache();
         services.AddSingleton<ILoginAttemptTracker, MemoryCacheLoginAttemptTracker>();
+        services.AddSingleton<IPasswordResetSettings>(sp =>
+            new PasswordResetSettings(configuration));
 
         // Email
         services.Configure<ResendSettings>(configuration.GetSection("Resend"));

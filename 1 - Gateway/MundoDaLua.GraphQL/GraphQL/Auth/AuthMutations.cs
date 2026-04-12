@@ -5,6 +5,8 @@ using MyCRM.Auth.Application.Commands.Users.UpdateUser;
 using MyCRM.Auth.Application.Commands.Login;
 using MyCRM.Auth.Application.Commands.LoginByEmail;
 using MyCRM.Auth.Application.Commands.RefreshToken;
+using MyCRM.Auth.Application.Commands.Auth.RequestPasswordReset;
+using MyCRM.Auth.Application.Commands.Auth.ResetPassword;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.GraphQL.GraphQL.Auth.Inputs;
 using MyCRM.Shared.Kernel;
@@ -100,6 +102,32 @@ public class AuthMutations
         var result = await mediator.Send(new RefreshTokenCommand(input.TenantId, input.RefreshToken), ct);
         return result.IsSuccess
             ? result.Value!
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    [AllowAnonymous]
+    public async Task<bool> RequestPasswordResetAsync(
+        RequestPasswordResetInput input,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new RequestPasswordResetCommand(input.Email), ct);
+        return result.IsSuccess
+            ? result.Value
+            : throw new GraphQLException(result.Errors.Select(e =>
+                ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
+    }
+
+    [AllowAnonymous]
+    public async Task<bool> ResetPasswordAsync(
+        ResetPasswordInput input,
+        [Service] ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new ResetPasswordCommand(input.Token, input.NewPassword, input.NewPasswordConfirmation), ct);
+        return result.IsSuccess
+            ? result.Value
             : throw new GraphQLException(result.Errors.Select(e =>
                 ErrorBuilder.New().SetMessage(e).SetExtension("code", result.ErrorCode).Build()));
     }
