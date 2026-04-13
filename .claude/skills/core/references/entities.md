@@ -174,3 +174,35 @@ Role *──* Permission    (via auth.role_permissions)
 ## Customer (`crm.customers`)
 
 Entidade legada de CRM genérico. Futuramente será refatorada para referenciar `Person`.
+
+---
+
+## Tenant — conta cliente isolada da plataforma (`auth.tenants`)
+
+`Tenant` representa uma conta cliente (escola, empresa) que usa a plataforma MyCRM. É a raiz do sistema multi-tenant: o `Id` desta entidade **é** o `TenantId` propagado para todas as entidades tenant-aware do sistema.
+
+Herda de `BaseEntity` (não `TenantEntity`) — não faz sentido filtrar tenants por `TenantId`.
+
+```
+Tenant 1──0..* User        (lógico: auth.users.TenantId)
+Tenant 1──0..* Role        (lógico: auth.roles.TenantId)
+Tenant 1──0..1 Company     (lógico: Tenant.CompanyId → crm.companies, sem FK física)
+Tenant 1──0..1 Person      (lógico: Tenant.OwnerPersonId → crm.people, sem FK física)
+```
+
+Campos específicos: `Name`, `CompanyId` (Guid — ref lógica para `crm.companies`), `OwnerPersonId` (Guid? — ref lógica para `crm.people`), `Status` (TenantStatus), `Plan` (TenantPlan).
+
+Enums em `MyCRM.Auth.Domain.Entities`:
+- `TenantStatus`: `Trial = 0`, `Active = 1`, `Suspended = 2`, `Cancelled = 3`
+- `TenantPlan`: `Free = 0`, `Basic = 1`, `Premium = 2`
+
+Métodos de domínio: `Activate()`, `Suspend()`, `Cancel()`, `UpdateName(string)`, `SetOwnerPerson(Guid)`, `SetPlan(TenantPlan)`.
+
+Factory method: `Tenant.Create(name, companyId, ownerPersonId?, plan?, id?)` — `id` pode ser pré-determinado para garantir consistência quando tenant, user e company são criados juntos no registro.
+
+**Design decisions:**
+- As referências a `Company` e `Person` são **lógicas** (sem FK física de banco) — os schemas `auth` e `crm` são independentes.
+- `RegisterTenant` é a única mutation pública (`[AllowAnonymous]`) que cria Tenant + Company + Person admin + User + Role em uma única operação orquestrada por `RegisterTenantHandler`.
+- `UpdateTenant` e `DeleteTenant` requerem `tenants:manage` (permissão de administração da plataforma, não granular por recurso).
+- `TenantQueries` usa `AuthDbContext` diretamente no resolver (exceção ao padrão CQRS) — tenants são uma entidade de leitura administrativa simples.
+- Seed: `AuthDataSeeder.EnsureSeedTenantAsync` garante o tenant dev `00000000-0000-0000-0000-000000000001` com `Name = "Mundo da Lua"`, `Status = Active`.

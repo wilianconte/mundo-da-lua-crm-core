@@ -29,6 +29,33 @@
 - [ ] **Skill `core` atualizada com novos conhecimentos?**
 - [ ] Permissões normalizadas no backend (`Trim + ToLowerInvariant + remove vazios/duplicados`)?
 - [ ] Regressão RBAC non-admin com e sem permissão nas mutations principais coberta?
+- [ ] **Testes escritos e passando para todos os novos handlers e resolvers?** ← OBRIGATÓRIO (ver regra abaixo)
+
+---
+
+## REGRA OBRIGATÓRIA — TESTES PARA TODA NOVA FUNCIONALIDADE
+
+**Toda implementação deve ter testes antes de encerrar a tarefa — sem precisar que o usuário peça.**
+
+### O que testar obrigatoriamente
+
+| Camada | O que criar | Localização |
+|---|---|---|
+| Handler (command) | Casos: success, not found, duplicate, validações de negócio | `4 - Tests/UnitTests/{Dominio}/` |
+| GraphQL Queries | Schema (campo existe), auth (sem token nega), paginação, filtros, soft-delete | `4 - Tests/UnitTests/GraphQL/{Entidade}QueryTests.cs` |
+| GraphQL Mutations (RBAC) | Com permissão ✅, sem permissão ❌, cross-contamination guard | `4 - Tests/UnitTests/GraphQL/AllEntitiesRbacRegressionTests.cs` |
+
+### Padrões de teste existentes a seguir
+
+- **Handler tests**: ver `DeleteRoleHandlerTests.cs`, `UpdateRoleHandlerTests.cs`, `UpdateTenantHandlerTests.cs`
+- **Query tests**: ver `UserQueryTests.cs`, `TenantQueryTests.cs`
+- **RBAC mutations**: ver `AllEntitiesRbacRegressionTests.cs` — adicionar o novo `{Entidade}Mutations` ao `BuildExecutorAsync` e criar os casos `With/WithoutPermission`
+
+### Ao finalizar qualquer implementação
+
+1. Rodar `dotnet test` — zero falhas obrigatório antes do commit
+2. Se algum teste existente quebrar, identificar a causa e corrigir (não ignorar)
+3. Se um campo novo obrigatório foi adicionado a um input existente, atualizar TODAS as mutation strings nos testes que usam aquele input
 
 ---
 
@@ -44,6 +71,7 @@
 - [ ] `companies`: create/update/delete com autorização validada
 - [ ] `users`: create/update/delete com `users:manage`
 - [ ] `roles`: create/update/delete com `roles:manage`
+- [ ] `tenants`: update/delete com `tenants:manage`
 - [ ] Guardas de cross-contamination entre entidades/permissões críticas validados
 
 ---
@@ -128,4 +156,5 @@ Toda nova entidade deve ter todos os artefatos abaixo antes de ser considerada c
 | `StudentGuardian` | ✅ | ✅ | ✅ | ✅ |
 | `StudentCourse` | ✅ | ✅ | ✅ | ✅ |
 | `Employee` | ✅ | ✅ | ✅ | ✅ |
+| `Tenant` | ✅ (Register/Update/Delete) | ✅ | ✅ | ✅ (via AuthDataSeeder) |
 

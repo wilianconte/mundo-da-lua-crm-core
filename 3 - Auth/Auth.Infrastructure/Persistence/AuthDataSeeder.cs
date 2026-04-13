@@ -9,16 +9,45 @@ public static class AuthDataSeeder
     public static readonly Guid SeedTenantId = new("00000000-0000-0000-0000-000000000001");
 
     /// <summary>
-    /// Garante a existência do Role "Administrador", do usuário admin e do vínculo entre eles.
-    /// O adminPersonId vem do CRM seed — quem orquestra é o MigrationExtensions do Gateway.
+    /// Garante a existência do Tenant seed, do Role "Administrador", do usuário admin e vínculos.
+    /// adminPersonId e adminCompanyId vêm do CRM seed — orquestrado pelo MigrationExtensions.
     /// </summary>
-    public static async Task SeedAsync(AuthDbContext db, ITenantService tenantService, Guid? adminPersonId = null)
+    public static async Task SeedAsync(
+        AuthDbContext db,
+        ITenantService tenantService,
+        Guid? adminPersonId = null,
+        Guid? adminCompanyId = null)
     {
         tenantService.SetTenant(SeedTenantId);
+
+        await EnsureSeedTenantAsync(db, adminCompanyId, adminPersonId);
 
         var adminRole = await EnsureAdminRoleAsync(db);
         await EnsureAdminRoleHasAllPermissionsAsync(db, adminRole);
         await EnsureAdminUserAsync(db, adminRole, adminPersonId);
+    }
+
+    // ── Tenant Seed ───────────────────────────────────────────────────────────
+
+    private static async Task EnsureSeedTenantAsync(AuthDbContext db, Guid? companyId, Guid? personId)
+    {
+        var exists = await db.Tenants
+            .IgnoreQueryFilters()
+            .AnyAsync(t => t.Id == SeedTenantId);
+
+        if (exists)
+            return;
+
+        var tenant = Tenant.Create(
+            name:          "Mundo da Lua",
+            companyId:     companyId ?? Guid.Empty,
+            ownerPersonId: personId,
+            id:            SeedTenantId);
+
+        tenant.Activate();
+
+        await db.Tenants.AddAsync(tenant);
+        await db.SaveChangesAsync();
     }
 
     // ── Role Administrador ────────────────────────────────────────────────────
@@ -82,6 +111,8 @@ public static class AuthDataSeeder
             if (adminPersonId.HasValue)
                 user.LinkToPerson(adminPersonId.Value);
         }
+
+        user.SetAdmin();
 
         await db.SaveChangesAsync();
 

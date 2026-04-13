@@ -24,6 +24,7 @@ public sealed class AuthDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,10 @@ public sealed class AuthDbContext : DbContext
 
         modelBuilder.Entity<Role>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        // Tenant não é filtrado por TenantId (é a raiz do tenant); apenas soft-delete.
+        modelBuilder.Entity<Tenant>()
+            .HasQueryFilter(x => !x.IsDeleted);
 
         base.OnModelCreating(modelBuilder);
     }

@@ -29,6 +29,10 @@ public sealed class UserRepository : IUserRepository
     public async Task<User?> GetByEmailAsync(Guid tenantId, string email, CancellationToken ct = default) =>
         await _db.Users.IgnoreQueryFilters()
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Email == email.ToLowerInvariant() && !x.IsDeleted, ct);
+
+    public async Task<User?> GetByEmailAcrossTenantsAsync(string email, CancellationToken ct = default) =>
+        await _db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.Email == email.ToLowerInvariant() && !x.IsDeleted, ct);
     public async Task<bool> EmailExistsAsync(Guid tenantId, string email, Guid? excludeId = null, CancellationToken ct = default) =>
         await _db.Users.AnyAsync(
             x => x.TenantId == tenantId
@@ -42,4 +46,8 @@ public sealed class UserRepository : IUserRepository
                 && x.PersonId == personId
                 && (excludeUserId == null || x.Id != excludeUserId.Value),
             ct);
+
+    public async Task<User?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default) =>
+        await _db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.PasswordResetToken == token && !x.IsDeleted, ct);
 }

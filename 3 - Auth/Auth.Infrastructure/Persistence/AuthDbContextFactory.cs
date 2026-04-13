@@ -14,7 +14,7 @@ public sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbCon
     public AuthDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<AuthDbContext>()
-            .UseNpgsql("Host=localhost;Database=mycrm_auth;Username=postgres;Password=postgres")
+            .UseNpgsql("Host=localhost;Database=mycrm;Username=postgres;Password=postgres")
             .Options;
 
         return new AuthDbContext(options, new DesignTimeTenantService(), new DesignTimeCurrentUserService());

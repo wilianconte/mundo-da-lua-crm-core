@@ -215,6 +215,57 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.ToTable("role_permissions", "auth");
                 });
 
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Tenant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<Guid?>("OwnerPersonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Plan")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("tenants", "auth");
+                });
+
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -239,6 +290,11 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsAdmin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -253,6 +309,13 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("PersonId")
                         .HasColumnType("uuid");
@@ -269,6 +332,10 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IsDeleted");
+
+                    b.HasIndex("PasswordResetToken")
+                        .IsUnique()
+                        .HasFilter("\"PasswordResetToken\" IS NOT NULL");
 
                     b.HasIndex("TenantId", "Email")
                         .IsUnique();

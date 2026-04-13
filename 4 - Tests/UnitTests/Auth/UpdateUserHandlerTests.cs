@@ -29,7 +29,7 @@ public sealed class UpdateUserHandlerTests
         _userRepository.GetByIdWithRolesAsync(Arg.Any<Guid>(), default).Returns((User?)null);
 
         var result = await _handler.Handle(
-            new UpdateUserCommand(Guid.NewGuid(), "Maria", "maria@test.com", null, true, null),
+            new UpdateUserCommand(Guid.NewGuid(), "Maria", "maria@test.com", null, true, false, null),
             default);
 
         Assert.False(result.IsSuccess);
@@ -44,7 +44,7 @@ public sealed class UpdateUserHandlerTests
         _userRepository.EmailExistsAsync(_tenantId, "other@test.com", user.Id, default).Returns(true);
 
         var result = await _handler.Handle(
-            new UpdateUserCommand(user.Id, "Maria", "other@test.com", null, true, null),
+            new UpdateUserCommand(user.Id, "Maria", "other@test.com", null, true, false, null),
             default);
 
         Assert.False(result.IsSuccess);
@@ -70,6 +70,7 @@ public sealed class UpdateUserHandlerTests
                 "Maria Nova",
                 "maria.nova@test.com",
                 Guid.NewGuid(),
+                false,
                 false,
                 "NovaSenha123!",
                 [tenantRole.Id]),
@@ -97,7 +98,7 @@ public sealed class UpdateUserHandlerTests
             .Returns([Role.Create(Guid.NewGuid(), "Professor")]);
 
         var result = await _handler.Handle(
-            new UpdateUserCommand(user.Id, "Maria", "maria@test.com", null, true, null, [roleId]),
+            new UpdateUserCommand(user.Id, "Maria", "maria@test.com", null, true, false, null, [roleId]),
             default);
 
         Assert.False(result.IsSuccess);
@@ -116,7 +117,7 @@ public sealed class UpdateUserHandlerTests
         _roleRepository.GetByIdsIgnoringQueryFiltersAsync(Arg.Any<IReadOnlyCollection<Guid>>(), default).Returns([]);
 
         var result = await _handler.Handle(
-            new UpdateUserCommand(user.Id, "Maria", "maria@test.com", null, true, null, [roleId]),
+            new UpdateUserCommand(user.Id, "Maria", "maria@test.com", null, true, false, null, [roleId]),
             default);
 
         Assert.False(result.IsSuccess);

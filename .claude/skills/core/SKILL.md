@@ -15,27 +15,36 @@ Você está trabalhando no backend do **MyCRM**. Aplique rigorosamente as regras
 
 ---
 
-## REGRA OBRIGATÓRIA — BRANCH E PULL REQUEST
+## FLUXO DE DESENVOLVIMENTO OBRIGATÓRIO
 
-**Ao iniciar qualquer implementação, crie uma branch `claude/*` antes de escrever qualquer código:**
+Execute **sempre** nesta ordem — não pule etapas:
 
-```bash
-git checkout -b claude/<descricao-curta-da-feature>
-# Exemplos:
-# claude/add-employee-entity
-# claude/add-student-course-enrollment
-# claude/fix-tenant-filter-bug
+```
+1. git checkout dev && git pull
+2. git checkout -b claude/<descricao>
+3. [implementar — seguir checklists.md]
+4. Se alterou entidade → criar migration (obrigatório antes do build)
+5. Escrever testes unitários (obrigatório)
+6. dotnet build MyCRM.sln --verbosity minimal
+7. dotnet test "4 - Tests/UnitTests/MyCRM.UnitTests.csproj" --no-build --verbosity minimal
+8. Atualizar esta skill com novos conhecimentos
+9. gh pr create --base dev ...
 ```
 
-**Ao finalizar a implementação, crie um Pull Request para `dev`:**
+> O hook em `.claude/settings.json` bloqueia `gh pr create` automaticamente
+> se build ou testes falharem.
 
+**Ao criar a PR, incluir no body:**
 ```bash
-git add <arquivos-relevantes>
-git commit -m "feat(...): descrição da implementação"
-gh pr create --title "titulo curto" --body "$(cat <<'EOF'
+gh pr create --base dev --title "titulo curto" --body "$(cat <<'EOF'
 ## Summary
 - bullet 1
 - bullet 2
+
+## Validação
+- Build: dotnet build ✅
+- Testes: dotnet test ✅ (N passando)
+- Migration: [criada / não necessária]
 
 ## Test plan
 - [ ] Aplicação sobe sem erros
@@ -49,7 +58,7 @@ EOF
 
 Regras:
 - Nunca commitar diretamente em `main` ou `dev`
-- Nome da branch deve descrever a feature/fix em inglês, no formato `claude/<descricao>`
+- Nome da branch: `claude/<descricao>` em inglês (feature) ou `claude/fix-<descricao>` (correção)
 - O PR deve ser criado antes de encerrar a tarefa — sem precisar que o usuário peça
 - O link do PR deve ser reportado ao usuário ao final
 
@@ -165,7 +174,7 @@ Shared.Kernel ← todos
 | Schema | DbContext | Tabelas existentes | Módulo |
 |---|---|---|---|
 | `crm` | `CRMDbContext` | `customers`, `people`, `companies`, `students`, `student_guardians`, `courses`, `student_courses`, `employees` | CRM |
-| `auth` | `AuthDbContext` | `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `refresh_tokens` | Auth |
+| `auth` | `AuthDbContext` | `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `refresh_tokens`, `tenants` | Auth |
 
 Schemas planejados (ainda não implementados):
 
@@ -194,6 +203,7 @@ Leia `references/entities.md` para documentação completa de cada entidade.
 | `StudentCourse` | `crm.student_courses` | Matrícula aluno↔curso |
 | `Employee` | `crm.employees` | Papel de `Person` no contexto de RH |
 | `Customer` | `crm.customers` | Entidade legada de CRM genérico |
+| `Tenant` | `auth.tenants` | Conta cliente isolada da plataforma (raiz do sistema multi-tenant) |
 
 
 ---

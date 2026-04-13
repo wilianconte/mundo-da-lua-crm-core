@@ -6,7 +6,9 @@ namespace MyCRM.Auth.Domain.Repositories;
 public interface IUserRepository : IRepository<User>
 {
     Task<User?> GetByEmailAsync(Guid tenantId, string email, CancellationToken ct = default);
+    Task<User?> GetByEmailAcrossTenantsAsync(string email, CancellationToken ct = default);
     Task<User?> GetByIdWithRolesAsync(Guid id, CancellationToken ct = default);
     Task<bool> EmailExistsAsync(Guid tenantId, string email, Guid? excludeId = null, CancellationToken ct = default);
     Task<bool> PersonIdAlreadyLinkedAsync(Guid tenantId, Guid personId, Guid? excludeUserId = null, CancellationToken ct = default);
+    Task<User?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default);
 }

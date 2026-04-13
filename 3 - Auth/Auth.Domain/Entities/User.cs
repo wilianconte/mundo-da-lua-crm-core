@@ -8,6 +8,7 @@ public class User : TenantEntity
     public string PasswordHash { get; private set; } = default!;
     public string Name { get; private set; } = default!;
     public bool IsActive { get; private set; }
+    public bool IsAdmin { get; private set; }
 
     private readonly List<UserRole> _userRoles = [];
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
@@ -76,6 +77,32 @@ public class User : TenantEntity
         Touch();
     }
 
+    public string? PasswordResetToken { get; private set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; private set; }
+
+    public void SetPasswordResetToken(string token, DateTime expiresAt)
+    {
+        PasswordResetToken = token;
+        PasswordResetTokenExpiresAt = expiresAt;
+        Touch();
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetToken = null;
+        PasswordResetTokenExpiresAt = null;
+        Touch();
+    }
+
+    public void ResetPassword(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
+        ClearPasswordResetToken();
+    }
+
     public void Deactivate() { IsActive = false; Touch(); }
     public void Activate() { IsActive = true; Touch(); }
+
+    public void SetAdmin() { IsAdmin = true; Touch(); }
+    public void UnsetAdmin() { IsAdmin = false; Touch(); }
 }

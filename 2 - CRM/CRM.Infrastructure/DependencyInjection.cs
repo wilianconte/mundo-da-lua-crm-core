@@ -1,6 +1,8 @@
 using MyCRM.CRM.Domain.Repositories;
 using MyCRM.CRM.Infrastructure.Persistence;
 using MyCRM.CRM.Infrastructure.Repositories;
+using MyCRM.CRM.Infrastructure.Services;
+using MyCRM.Shared.Kernel.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseRepository, CourseRepository>();
         services.AddScoped<IStudentCourseRepository, StudentCourseRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<ICrmTenantProvisioningService, CrmTenantProvisioningService>();
 
         return services;
     }

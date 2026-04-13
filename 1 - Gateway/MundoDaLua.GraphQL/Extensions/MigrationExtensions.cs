@@ -24,31 +24,41 @@ public static class MigrationExtensions
 
         var tenantService = sp.GetRequiredService<ITenantService>();
 
-        // CRM seed first so the admin Person exists.
+        // CRM seed first so the admin Person and Company exist.
         await DataSeeder.SeedAsync(customersDb, tenantService);
 
-        // Fetch the admin PersonId in CRM to link it to admin User in Auth.
+        // Fetch the admin PersonId and CompanyId from CRM to link to Auth.
         tenantService.SetTenant(DataSeeder.SeedTenantId);
-        var adminPersonId = await GetAdminPersonIdAsync(customersDb);
+        var adminPersonId  = await GetAdminPersonIdAsync(customersDb);
+        var adminCompanyId = await GetSeedCompanyIdAsync(customersDb);
 
         // Sync system permissions before ensuring admin role permissions.
         await PermissionSeeder.SeedAsync(authDb);
 
-        // Seed auth data and guarantee admin role has all active permissions.
-        await AuthDataSeeder.SeedAsync(authDb, tenantService, adminPersonId);
+        // Seed Tenant + auth data and guarantee admin role has all active permissions.
+        await AuthDataSeeder.SeedAsync(authDb, tenantService, adminPersonId, adminCompanyId);
     }
 
     private static async Task<Guid?> GetAdminPersonIdAsync(CRMDbContext crmDb)
     {
         const string adminEmail = "admin@mundodalua.com";
 
-        var person = await crmDb.People
+        return await crmDb.People
             .IgnoreQueryFilters()
             .Where(p => p.Email == adminEmail)
             .Select(p => (Guid?)p.Id)
             .FirstOrDefaultAsync();
+    }
 
-        return person;
+    private static async Task<Guid?> GetSeedCompanyIdAsync(CRMDbContext crmDb)
+    {
+        const string seedCnpj = "12.345.678/0001-90"; // Mundo da Lua Educação Ltda
+
+        return await crmDb.Companies
+            .IgnoreQueryFilters()
+            .Where(c => c.RegistrationNumber == seedCnpj)
+            .Select(c => (Guid?)c.Id)
+            .FirstOrDefaultAsync();
     }
 
     private static async Task ResetMigrationsIfSchemaLostAsync(DbContext db, string schema, string table)
@@ -56,11 +66,18 @@ public static class MigrationExtensions
         await db.Database.OpenConnectionAsync();
         var connection = db.Database.GetDbConnection();
 
-        await using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}')";
-        var exists = (bool)(await cmd.ExecuteScalarAsync() ?? false);
+        await using var checkTable = connection.CreateCommand();
+        checkTable.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}')";
+        var tableExists = (bool)(await checkTable.ExecuteScalarAsync() ?? false);
 
-        if (!exists)
+        if (tableExists)
+            return;
+
+        await using var checkHistory = connection.CreateCommand();
+        checkHistory.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '__EFMigrationsHistory')";
+        var historyExists = (bool)(await checkHistory.ExecuteScalarAsync() ?? false);
+
+        if (historyExists)
             await db.Database.ExecuteSqlRawAsync($"DELETE FROM \"{schema}\".\"__EFMigrationsHistory\"");
     }
 }

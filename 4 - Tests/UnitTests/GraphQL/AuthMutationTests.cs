@@ -109,7 +109,8 @@ public sealed class AuthMutationTests
             Name: "Test User",
             Email: "test@test.com",
             RefreshToken: "new-refresh-token",
-            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30));
+            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30),
+            IsAdmin: false);
 
         mediator.Send(Arg.Any<RefreshTokenCommand>(), Arg.Any<CancellationToken>())
             .Returns(MyCRM.Shared.Kernel.Results.Result<LoginDto>.Success(dto));
@@ -140,7 +141,8 @@ public sealed class AuthMutationTests
             Name: "Test User",
             Email: "test@test.com",
             RefreshToken: "refresh-token-value",
-            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30));
+            RefreshTokenExpiresAt: DateTimeOffset.UtcNow.AddDays(30),
+            IsAdmin: false);
 
         mediator.Send(Arg.Any<LoginCommand>(), Arg.Any<CancellationToken>())
             .Returns(MyCRM.Shared.Kernel.Results.Result<LoginDto>.Success(dto));
@@ -236,6 +238,7 @@ public sealed class AuthMutationTests
             Name: "Maria",
             Email: "maria@test.com",
             IsActive: true,
+            IsAdmin: false,
             PersonId: null,
             CreatedAt: DateTimeOffset.UtcNow,
             UpdatedAt: null,
@@ -271,6 +274,7 @@ public sealed class AuthMutationTests
             Name: "Maria",
             Email: "maria@test.com",
             IsActive: true,
+            IsAdmin: false,
             PersonId: null,
             CreatedAt: DateTimeOffset.UtcNow,
             UpdatedAt: null,
@@ -308,6 +312,7 @@ public sealed class AuthMutationTests
             Name: "Maria Atualizada",
             Email: "maria.atualizada@test.com",
             IsActive: false,
+            IsAdmin: false,
             PersonId: null,
             CreatedAt: DateTimeOffset.UtcNow.AddDays(-1),
             UpdatedAt: DateTimeOffset.UtcNow,
@@ -327,7 +332,7 @@ public sealed class AuthMutationTests
         var executor = await BuildExecutorAsync(sender, mediator);
 
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateUser(id: \"{userId}\", input: {{ name: \"Maria Atualizada\", email: \"maria.atualizada@test.com\", personId: null, isActive: false, password: \"NovaSenha123!\", roleIds: [\"{roleId}\"] }}) {{ id name email isActive }} }}",
+            $"mutation {{ updateUser(id: \"{userId}\", input: {{ name: \"Maria Atualizada\", email: \"maria.atualizada@test.com\", personId: null, isActive: false, isAdmin: false, password: \"NovaSenha123!\", roleIds: [\"{roleId}\"] }}) {{ id name email isActive }} }}",
             authenticated: true))).ExpectOperationResult();
 
         Assert.Null(result.Errors);
