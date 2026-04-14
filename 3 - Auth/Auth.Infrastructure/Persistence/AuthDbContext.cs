@@ -37,7 +37,21 @@ public sealed class AuthDbContext : DbContext
         modelBuilder.Entity<Role>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
-        // Tenant não é filtrado por TenantId (é a raiz do tenant); apenas soft-delete.
+        // Match the Role global filter to avoid required-principal warnings.
+        modelBuilder.Entity<UserRole>()
+            .HasQueryFilter(x =>
+                !x.User.IsDeleted &&
+                !x.Role.IsDeleted &&
+                x.User.TenantId == _tenant.TenantId &&
+                x.Role.TenantId == _tenant.TenantId);
+
+        // Match the Role global filter to avoid required-principal warnings.
+        modelBuilder.Entity<RolePermission>()
+            .HasQueryFilter(x =>
+                !x.Role.IsDeleted &&
+                x.Role.TenantId == _tenant.TenantId);
+
+        // Tenant nao e filtrado por TenantId (e a raiz do tenant); apenas soft-delete.
         modelBuilder.Entity<Tenant>()
             .HasQueryFilter(x => !x.IsDeleted);
 
@@ -66,4 +80,3 @@ public sealed class AuthDbContext : DbContext
         return base.SaveChangesAsync(cancellationToken);
     }
 }
-

@@ -139,7 +139,11 @@ builder.Services
 
 var app = builder.Build();
 
-await app.MigrateAllDbContextsAsync();
+if (args.Contains("--migrate"))
+{
+    await app.MigrateAllDbContextsAsync();
+    return;
+}
 
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();

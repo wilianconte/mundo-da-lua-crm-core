@@ -16,10 +16,8 @@ public static class MigrationExtensions
         var customersDb = sp.GetRequiredService<CRMDbContext>();
         var authDb      = sp.GetRequiredService<AuthDbContext>();
 
-        await ResetMigrationsIfSchemaLostAsync(customersDb, "crm", "customers");
         await customersDb.Database.MigrateAsync();
 
-        await ResetMigrationsIfSchemaLostAsync(authDb, "auth", "users");
         await authDb.Database.MigrateAsync();
 
         var tenantService = sp.GetRequiredService<ITenantService>();
@@ -61,23 +59,4 @@ public static class MigrationExtensions
             .FirstOrDefaultAsync();
     }
 
-    private static async Task ResetMigrationsIfSchemaLostAsync(DbContext db, string schema, string table)
-    {
-        await db.Database.OpenConnectionAsync();
-        var connection = db.Database.GetDbConnection();
-
-        await using var checkTable = connection.CreateCommand();
-        checkTable.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}')";
-        var tableExists = (bool)(await checkTable.ExecuteScalarAsync() ?? false);
-
-        if (tableExists)
-            return;
-
-        await using var checkHistory = connection.CreateCommand();
-        checkHistory.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '__EFMigrationsHistory')";
-        var historyExists = (bool)(await checkHistory.ExecuteScalarAsync() ?? false);
-
-        if (historyExists)
-            await db.Database.ExecuteSqlRawAsync($"DELETE FROM \"{schema}\".\"__EFMigrationsHistory\"");
-    }
 }
