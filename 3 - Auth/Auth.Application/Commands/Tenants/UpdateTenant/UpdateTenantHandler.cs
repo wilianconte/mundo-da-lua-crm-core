@@ -26,7 +26,6 @@ public sealed class UpdateTenantHandler : IRequestHandler<UpdateTenantCommand, R
             return Result<TenantDto>.Failure("TENANT_NAME_DUPLICATE", "A tenant with this name already exists.");
 
         tenant.UpdateName(request.Name);
-        tenant.SetPlan(request.Plan);
 
         switch (request.Status)
         {
@@ -41,6 +40,6 @@ public sealed class UpdateTenantHandler : IRequestHandler<UpdateTenantCommand, R
         return Result<TenantDto>.Success(ToDto(tenant));
     }
 
-    internal static TenantDto ToDto(MyCRM.Auth.Domain.Entities.Tenant t) =>
-        new(t.Id, t.Name, t.CompanyId, t.OwnerPersonId, t.Status, t.Plan, t.CreatedAt, t.UpdatedAt);
+    internal static TenantDto ToDto(Tenant t) =>
+        new(t.Id, t.Name, t.CompanyId, t.OwnerPersonId, t.Status, t.CreatedAt, t.UpdatedAt);
 }

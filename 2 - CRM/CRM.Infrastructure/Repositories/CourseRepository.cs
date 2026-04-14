@@ -35,4 +35,7 @@ public sealed class CourseRepository : ICourseRepository
             x => x.TenantId == tenantId
               && x.Code == code.Trim()
               && (excludeId == null || x.Id != excludeId), ct);
+
+    public async Task<int> CountActiveByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+        await _db.Courses.CountAsync(x => x.TenantId == tenantId && !x.IsDeleted, ct);
 }

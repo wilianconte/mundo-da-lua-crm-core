@@ -1346,7 +1346,7 @@ public sealed class AllEntitiesRbacRegressionTests
         var userId = Guid.NewGuid();
         var dto = new TenantDto(
             Guid.NewGuid(), "Tenant Atualizado", Guid.NewGuid(), null,
-            TenantStatus.Active, TenantPlan.Basic,
+            TenantStatus.Active,
             DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
 
         var mediator = Substitute.For<IMediator>();
@@ -1359,7 +1359,7 @@ public sealed class AllEntitiesRbacRegressionTests
 
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Tenant Atualizado\", plan: BASIC, status: ACTIVE }}) {{ tenant {{ id name }} }} }}",
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Tenant Atualizado\", status: ACTIVE }}) {{ tenant {{ id name }} }} }}",
             userId))).ExpectOperationResult();
 
         Assert.Null(result.Errors);
@@ -1379,7 +1379,7 @@ public sealed class AllEntitiesRbacRegressionTests
 
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Denied\", plan: FREE, status: ACTIVE }}) {{ tenant {{ id }} }} }}",
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Denied\", status: ACTIVE }}) {{ tenant {{ id }} }} }}",
             userId))).ExpectOperationResult();
 
         AssertAuthError(result);
@@ -1437,7 +1437,7 @@ public sealed class AllEntitiesRbacRegressionTests
 
         var executor = await BuildExecutorAsync(mediator, permissionService);
         var result = (await executor.ExecuteAsync(BuildRequest(
-            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Should Fail\", plan: FREE, status: ACTIVE }}) {{ tenant {{ id }} }} }}",
+            $"mutation {{ updateTenant(id: \"{Guid.NewGuid()}\", input: {{ name: \"Should Fail\", status: ACTIVE }}) {{ tenant {{ id }} }} }}",
             userId))).ExpectOperationResult();
 
         AssertAuthError(result);

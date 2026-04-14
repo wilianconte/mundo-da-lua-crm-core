@@ -23,10 +23,6 @@ public sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .IsRequired()
             .HasConversion<int>();
 
-        builder.Property(x => x.Plan)
-            .IsRequired()
-            .HasConversion<int>();
-
         builder.Property(x => x.IsDeleted).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).IsRequired();
 

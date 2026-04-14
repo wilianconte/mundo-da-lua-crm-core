@@ -49,7 +49,7 @@ public sealed class TenantMutations
         [Service] ISender sender,
         CancellationToken ct)
     {
-        var result = await sender.Send(new UpdateTenantCommand(id, input.Name, input.Plan, input.Status), ct);
+        var result = await sender.Send(new UpdateTenantCommand(id, input.Name, input.Status), ct);
 
         return result.IsSuccess
             ? new TenantPayload(result.Value!)

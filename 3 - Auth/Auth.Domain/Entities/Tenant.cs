@@ -12,8 +12,10 @@ namespace MyCRM.Auth.Domain.Entities;
 /// não faz sentido filtrar tenants por TenantId.
 ///
 /// Relacionamentos lógicos (sem FK física entre schemas):
-///   CompanyId  → crm.companies  (a empresa proprietária da conta)
-///   OwnerPersonId → crm.people  (a pessoa que registrou a conta)
+///   CompanyId     → crm.companies  (a empresa proprietária da conta)
+///   OwnerPersonId → crm.people     (a pessoa que registrou a conta)
+///
+/// O plano vigente é obtido via TenantPlan com Status = Active.
 /// </summary>
 public sealed class Tenant : BaseEntity
 {
@@ -34,8 +36,6 @@ public sealed class Tenant : BaseEntity
 
     public TenantStatus Status { get; private set; }
 
-    public TenantPlan Plan { get; private set; }
-
     private Tenant() { }
 
     /// <summary>
@@ -49,7 +49,6 @@ public sealed class Tenant : BaseEntity
         string name,
         Guid companyId,
         Guid? ownerPersonId = null,
-        TenantPlan plan = TenantPlan.Free,
         Guid? id = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -60,8 +59,7 @@ public sealed class Tenant : BaseEntity
             Name          = name.Trim(),
             CompanyId     = companyId,
             OwnerPersonId = ownerPersonId,
-            Status        = TenantStatus.Trial,
-            Plan          = plan,
+            Status        = TenantStatus.Active,
         };
     }
 
@@ -81,12 +79,6 @@ public sealed class Tenant : BaseEntity
     public void SetOwnerPerson(Guid personId)
     {
         OwnerPersonId = personId;
-        Touch();
-    }
-
-    public void SetPlan(TenantPlan plan)
-    {
-        Plan = plan;
         Touch();
     }
 }

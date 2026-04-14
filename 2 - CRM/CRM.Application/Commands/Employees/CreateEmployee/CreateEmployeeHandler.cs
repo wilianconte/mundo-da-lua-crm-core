@@ -3,8 +3,10 @@ using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Domain.Repositories;
 using Mapster;
 using MediatR;
+using MyCRM.Shared.Kernel.Exceptions;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using MyCRM.Shared.Kernel.Results;
+using MyCRM.Shared.Kernel.Services;
 
 namespace MyCRM.CRM.Application.Commands.Employees.CreateEmployee;
 
@@ -13,19 +15,36 @@ public sealed class CreateEmployeeHandler : IRequestHandler<CreateEmployeeComman
     private readonly IEmployeeRepository _repository;
     private readonly IPersonRepository   _personRepository;
     private readonly ITenantService      _tenant;
+    private readonly IPlanLimitService   _planLimit;
 
     public CreateEmployeeHandler(
         IEmployeeRepository repository,
         IPersonRepository personRepository,
-        ITenantService tenant)
+        ITenantService tenant,
+        IPlanLimitService planLimit)
     {
         _repository       = repository;
         _personRepository = personRepository;
         _tenant           = tenant;
+        _planLimit        = planLimit;
     }
 
     public async Task<Result<EmployeeDto>> Handle(CreateEmployeeCommand request, CancellationToken ct)
     {
+        // Verifica limite de funcionários do plano
+        try
+        {
+            await _planLimit.CheckNumericLimitAsync(
+                _tenant.TenantId,
+                "max_employees",
+                () => _repository.CountActiveByTenantAsync(_tenant.TenantId, ct),
+                ct);
+        }
+        catch (PlanLimitException ex)
+        {
+            return Result<EmployeeDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
         // Ensure the Person exists within this tenant
         var person = await _personRepository.GetByIdAsync(request.PersonId, ct);
         if (person is null)

@@ -69,7 +69,7 @@ public sealed class TenantQueryTests
             .Build();
     }
 
-    private static Tenant CreateTenant(string name, TenantStatus status = TenantStatus.Trial)
+    private static Tenant CreateTenant(string name, TenantStatus status = TenantStatus.Active)
     {
         var tenant = Tenant.Create(name, Guid.NewGuid());
         switch (status)

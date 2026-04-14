@@ -3,8 +3,10 @@ using MyCRM.CRM.Domain.Entities;
 using MyCRM.CRM.Domain.Repositories;
 using Mapster;
 using MediatR;
+using MyCRM.Shared.Kernel.Exceptions;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using MyCRM.Shared.Kernel.Results;
+using MyCRM.Shared.Kernel.Services;
 
 namespace MyCRM.CRM.Application.Commands.Courses.CreateCourse;
 
@@ -12,15 +14,31 @@ public sealed class CreateCourseHandler : IRequestHandler<CreateCourseCommand, R
 {
     private readonly ICourseRepository _repository;
     private readonly ITenantService    _tenant;
+    private readonly IPlanLimitService _planLimit;
 
-    public CreateCourseHandler(ICourseRepository repository, ITenantService tenant)
+    public CreateCourseHandler(ICourseRepository repository, ITenantService tenant, IPlanLimitService planLimit)
     {
         _repository = repository;
         _tenant     = tenant;
+        _planLimit  = planLimit;
     }
 
     public async Task<Result<CourseDto>> Handle(CreateCourseCommand request, CancellationToken ct)
     {
+        // Verifica limite de cursos do plano
+        try
+        {
+            await _planLimit.CheckNumericLimitAsync(
+                _tenant.TenantId,
+                "max_courses",
+                () => _repository.CountActiveByTenantAsync(_tenant.TenantId, ct),
+                ct);
+        }
+        catch (PlanLimitException ex)
+        {
+            return Result<CourseDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
         // Prevent duplicate course codes within the tenant
         if (request.Code is not null)
         {

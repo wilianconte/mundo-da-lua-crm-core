@@ -42,4 +42,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
             x => x.TenantId == tenantId
               && x.EmployeeCode == employeeCode.Trim()
               && (excludeId == null || x.Id != excludeId), ct);
+
+    public async Task<int> CountActiveByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+        await _db.Employees.CountAsync(x => x.TenantId == tenantId && !x.IsDeleted, ct);
 }

@@ -8,6 +8,5 @@ public record TenantDto(
     Guid CompanyId,
     Guid? OwnerPersonId,
     TenantStatus Status,
-    TenantPlan Plan,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);
