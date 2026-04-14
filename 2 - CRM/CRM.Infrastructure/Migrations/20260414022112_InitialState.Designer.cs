@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyCRM.CRM.Infrastructure.Migrations
 {
     [DbContext(typeof(CRMDbContext))]
-    [Migration("20260330212521_RemoveStudentEnrollmentFields")]
-    partial class RemoveStudentEnrollmentFields
+    [Migration("20260414022112_InitialState")]
+    partial class InitialState
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -537,9 +537,6 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.Property<Guid>("PersonId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -561,8 +558,6 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.HasIndex("TenantId", "PersonId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
-
-                    b.HasIndex("TenantId", "Status");
 
                     b.ToTable("students", "crm");
                 });
@@ -906,7 +901,7 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("MyCRM.CRM.Domain.Entities.Student", "Student")
-                        .WithMany()
+                        .WithMany("Courses")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -942,6 +937,8 @@ namespace MyCRM.CRM.Infrastructure.Migrations
 
             modelBuilder.Entity("MyCRM.CRM.Domain.Entities.Student", b =>
                 {
+                    b.Navigation("Courses");
+
                     b.Navigation("Guardians");
                 });
 #pragma warning restore 612, 618
