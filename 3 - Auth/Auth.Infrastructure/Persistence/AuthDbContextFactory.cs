@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using MyCRM.Shared.Kernel.Audit;
 using MyCRM.Shared.Kernel.MultiTenancy;
@@ -7,14 +7,14 @@ namespace MyCRM.Auth.Infrastructure.Persistence;
 
 /// <summary>
 /// Usado exclusivamente pelo EF Core CLI (dotnet ef migrations add/update).
-/// Não é invocado em tempo de execução.
+/// NÃ£o Ã© invocado em tempo de execuÃ§Ã£o.
 /// </summary>
 public sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbContext>
 {
     public AuthDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<AuthDbContext>()
-            .UseNpgsql("Host=localhost;Database=mycrm;Username=postgres;Password=postgres")
+            .UseNpgsql("Host=localhost;Database=mycrm;Username=postgres;Password=postgres", npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "auth"))
             .Options;
 
         return new AuthDbContext(options, new DesignTimeTenantService(), new DesignTimeCurrentUserService());
@@ -31,3 +31,4 @@ public sealed class AuthDbContextFactory : IDesignTimeDbContextFactory<AuthDbCon
         public Guid? UserId => null;
     }
 }
+

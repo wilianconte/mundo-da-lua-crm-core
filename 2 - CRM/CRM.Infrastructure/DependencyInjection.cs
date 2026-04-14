@@ -14,7 +14,9 @@ public static class DependencyInjection
     public static IServiceCollection AddCustomersInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<CRMDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(
+                configuration.GetConnectionString("DefaultConnection"),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "crm")));
 
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
