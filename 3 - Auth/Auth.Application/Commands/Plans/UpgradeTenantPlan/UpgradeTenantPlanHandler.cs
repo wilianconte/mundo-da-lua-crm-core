@@ -34,13 +34,23 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
         if (newPlan is null || !newPlan.IsActive)
             return Result.Failure("PLAN_NOT_FOUND", "Plano não encontrado ou inativo.");
 
-        // 3. Valida que o novo plano é diferente do atual
+        // 3. Valida que o destino não é Free (downgrade para Free usa CancelTenantPlan — RN-028.3)
+        if (newPlan.Price == 0)
+            return Result.Failure("UPGRADE_TO_FREE_NOT_ALLOWED",
+                "Para migrar para o plano gratuito, utilize o cancelamento com plano de destino Free.");
+
+        // 3b. Valida que o plano não está em PendingCancellation (RN-029.10)
+        if (activePlan.Status == TenantPlanStatus.PendingCancellation)
+            return Result.Failure("UPGRADE_BLOCKED_PENDING_CANCELLATION",
+                "Não é possível fazer upgrade com cancelamento pendente. Reverta o cancelamento primeiro.");
+
+        // 4. Valida que o novo plano é diferente do atual
         if (activePlan.PlanId == request.NewPlanId)
             return Result.Failure("PLAN_SAME_AS_CURRENT", "O tenant já está neste plano.");
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // 4. Se TenantPlan atual IsTrial = false: cancela todos os Billings Pending do TenantPlan atual
+        // 5. Se TenantPlan atual IsTrial = false: cancela todos os Billings Pending do TenantPlan atual
         if (!activePlan.IsTrial)
         {
             var pendingBillings = await _billingRepository.GetAllPendingByTenantPlanIdAsync(activePlan.Id, ct);
@@ -73,11 +83,11 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
                 : newPlan.Price;
         }
 
-        // 5. TenantPlan atual: Status = Upgraded, EndDate = hoje
+        // 6. TenantPlan atual: Status = Upgraded, EndDate = hoje
         activePlan.Upgrade(today);
         _tenantPlanRepository.Update(activePlan);
 
-        // 6. Se existir TenantPlan Paused para o tenant: Status = Cancelled
+        // 7. Se existir TenantPlan Paused para o tenant: Status = Cancelled
         var pausedPlan = await _tenantPlanRepository.GetPausedByTenantIdAsync(request.TenantId, ct);
         if (pausedPlan is not null)
         {
@@ -88,7 +98,7 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
         // Busca o plano Free para FallbackPlanId
         var freePlan = await _planRepository.GetFreePlanAsync(ct);
 
-        // 7. Cria novo TenantPlan: pago, 1 mês, fallback = Free
+        // 8. Cria novo TenantPlan: pago, 1 mês, fallback = Free
         var newTenantPlan = TenantPlan.Create(
             tenantId:       request.TenantId,
             planId:         request.NewPlanId,
@@ -100,7 +110,7 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
 
         await _tenantPlanRepository.AddAsync(newTenantPlan, ct);
 
-        // 8. Gera Billing se o novo plano for pago
+        // 9. Gera Billing (sempre pago aqui, pois Free foi rejeitado acima)
         if (newPlan.Price > 0)
         {
             var billing = Billing.Create(
@@ -113,7 +123,7 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
             await _billingRepository.AddAsync(billing, ct);
         }
 
-        // 9. Persiste tudo atomicamente
+        // 10. Persiste tudo atomicamente
         await _tenantPlanRepository.SaveChangesAsync(ct);
 
         return Result.Success();

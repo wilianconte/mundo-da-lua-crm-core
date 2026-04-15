@@ -27,8 +27,9 @@ Execute **sempre** nesta ordem — não pule etapas:
 5. Escrever testes unitários (obrigatório)
 6. dotnet build MyCRM.sln --verbosity minimal
 7. dotnet test "4 - Tests/UnitTests/MyCRM.UnitTests.csproj" --no-build --verbosity minimal
-8. Atualizar esta skill com novos conhecimentos
-9. gh pr create --base dev ...
+8. Criar build/output/<YYYY-MM-DD>-<descricao>.md descrevendo o que foi feito (obrigatório)
+9. Atualizar esta skill com novos conhecimentos
+10. gh pr create --base dev ...
 ```
 
 > O hook em `.claude/settings.json` bloqueia `gh pr create` automaticamente
@@ -66,9 +67,52 @@ Regras:
 
 ## REGRA OBRIGATÓRIA — ATUALIZAÇÃO DA SKILL
 
-**Ao finalizar qualquer implementação, execute obrigatoriamente os dois passos abaixo:**
+**Ao finalizar qualquer implementação, execute obrigatoriamente os três passos abaixo:**
 
-### Passo 1 — Atualizar conhecimentos
+### Passo 1 — Registrar a implementação em `build/output/`
+
+Crie um arquivo Markdown em `build/output/` descrevendo o que foi feito.
+O arquivo é consumido pelo **agente guardião de regras** para rastrear o histórico de decisões.
+A pasta `build/input/` pode conter prompts/specs de entrada fornecidos pelo usuário.
+
+**Caminho:** `build/output/<YYYY-MM-DD>-<descricao-kebab>.md`
+
+**Estrutura obrigatória:**
+
+```markdown
+# <Título da implementação>
+
+**Data:** YYYY-MM-DD
+**Branch:** claude/<nome-da-branch>
+**Decisão arquitetural:** DEC-XXX (se aplicável)
+
+## O que foi feito
+
+Descrição objetiva das mudanças: entidades criadas/alteradas, handlers,
+migrations, seeds, mutations GraphQL, testes.
+
+## Arquivos criados ou modificados
+
+- `caminho/do/arquivo.cs` — descrição breve
+- ...
+
+## Decisões tomadas
+
+- Por que X foi feito de determinada forma (contexto que não está no código)
+- Alternativas descartadas e o motivo
+
+## Impacto em outras partes do sistema
+
+- O que pode ser afetado por estas mudanças
+- Integrações / dependências a observar
+
+## Testes
+
+- N testes criados/atualizados
+- Cenários cobertos (resumo)
+```
+
+### Passo 2 — Atualizar conhecimentos da skill
 
 Atualize os arquivos desta skill com os novos conhecimentos adquiridos:
 - Novos módulos ou projetos → `SKILL.md` (tabela de projetos e schemas)
@@ -76,7 +120,7 @@ Atualize os arquivos desta skill com os novos conhecimentos adquiridos:
 - Novas armadilhas de migration → `references/migrations.md`
 - Novos anti-padrões ou padrões estabelecidos → `references/patterns.md`
 
-### Passo 2 — Análise de erros e prevenção futura
+### Passo 3 — Análise de erros e prevenção futura
 
 **Sempre que um erro for corrigido:**
 

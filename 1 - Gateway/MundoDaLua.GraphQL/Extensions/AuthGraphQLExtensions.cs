@@ -21,5 +21,6 @@ public static class AuthGraphQLExtensions
         .AddTypeExtension<TenantQueries>()
         .AddTypeExtension<TenantMutations>()
         // Plans / Subscriptions
+        .AddTypeExtension<TenantPlanQueries>()
         .AddTypeExtension<TenantPlanMutations>();
 }

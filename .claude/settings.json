@@ -3,6 +3,18 @@
     "defaultMode": "bypassPermissions"
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"INSTRUÇÃO AUTOMÁTICA DE SESSÃO: Inicie imediatamente o monitoramento da pasta build/input/ invocando o skill /loop com o seguinte prompt: Verifique se há arquivos novos em `D:\\\\Dev\\\\Mundo da Lua\\\\mundo-da-lua-crm\\\\mundo-da-lua-crm-core\\\\build\\\\input\\\\`. Se houver algum arquivo .md: 1. Leia o arquivo 2. Carregue a skill /core 3. Crie um plano de implementação 4. Implemente as alterações necessárias 5. Rode dotnet build MyCRM.sln --verbosity minimal e dotnet test — zero erros exigido 6. Escreva o resultado em build/output/<YYYY-MM-DD>-<descricao>.md 7. Apague o arquivo de input processado. Se não houver arquivos novos, aguarde e verifique novamente.\"}}'",
+            "timeout": 5,
+            "statusMessage": "Iniciando monitoramento de build/input/..."
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
