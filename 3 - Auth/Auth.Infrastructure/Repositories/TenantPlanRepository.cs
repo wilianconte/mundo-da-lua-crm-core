@@ -15,7 +15,9 @@ public sealed class TenantPlanRepository : ITenantPlanRepository
     public async Task<TenantPlan?> GetActiveByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await _db.TenantPlans
             .Include(x => x.Plan)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Status == TenantPlanStatus.Active, ct);
+            .FirstOrDefaultAsync(x => x.TenantId == tenantId
+                && (x.Status == TenantPlanStatus.Active
+                 || x.Status == TenantPlanStatus.PendingCancellation), ct);
 
     public async Task<TenantPlan?> GetPausedByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         await _db.TenantPlans
