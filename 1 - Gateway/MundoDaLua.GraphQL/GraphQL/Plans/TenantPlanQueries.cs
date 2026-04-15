@@ -11,8 +11,12 @@ namespace MyCRM.GraphQL.GraphQL.Plans;
 public sealed class TenantPlanQueries
 {
     /// <summary>
-    /// Retorna o TenantPlan ativo do tenant autenticado, incluindo o plano e suas features.
-    /// Retorna null se o tenant não possuir plano ativo (estado inválido em produção).
+    /// Retorna o TenantPlan corrente do tenant autenticado, incluindo o plano e suas features.
+    /// Inclui planos com Status = Active ou PendingCancellation — ambos representam o plano
+    /// em vigor: Active é o estado normal; PendingCancellation significa que o cancelamento foi
+    /// solicitado mas o plano ainda está válido até EndDate (permite exibir o botão "Reverter
+    /// cancelamento" no frontend e não quebra a navegação pós-cancelamento).
+    /// Retorna null apenas se o tenant não possuir nenhum plano em vigor (estado inválido em produção).
     /// </summary>
     [Authorize]
     [UseFirstOrDefault]
@@ -26,7 +30,8 @@ public sealed class TenantPlanQueries
                 .ThenInclude(p => p.PlanFeatures)
                     .ThenInclude(pf => pf.Feature)
             .Where(x => x.TenantId == tenantService.TenantId
-                     && x.Status == TenantPlanStatus.Active);
+                     && (x.Status == TenantPlanStatus.Active
+                      || x.Status == TenantPlanStatus.PendingCancellation));
 
     /// <summary>
     /// Retorna todos os planos ativos da plataforma com suas features, ordenados por SortOrder.
