@@ -35,4 +35,7 @@ public sealed class StudentRepository : IStudentRepository
             x => x.TenantId == tenantId
               && x.PersonId == personId
               && (excludeId == null || x.Id != excludeId), ct);
+
+    public async Task<int> CountActiveByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+        await _db.Students.CountAsync(x => x.TenantId == tenantId && !x.IsDeleted, ct);
 }

@@ -8,6 +8,5 @@ namespace MyCRM.Auth.Application.Commands.Tenants.UpdateTenant;
 public record UpdateTenantCommand(
     Guid Id,
     string Name,
-    TenantPlan Plan,
     TenantStatus Status
 ) : IRequest<Result<TenantDto>>;

@@ -1,5 +1,6 @@
 using HotChocolate.Execution.Configuration;
 using MyCRM.GraphQL.GraphQL.Auth;
+using MyCRM.GraphQL.GraphQL.Plans;
 using MyCRM.GraphQL.GraphQL.Tenants;
 
 namespace MyCRM.GraphQL.Extensions;
@@ -18,5 +19,7 @@ public static class AuthGraphQLExtensions
         .AddTypeExtension<PermissionAdminQueries>()
         // Tenants
         .AddTypeExtension<TenantQueries>()
-        .AddTypeExtension<TenantMutations>();
+        .AddTypeExtension<TenantMutations>()
+        // Plans / Subscriptions
+        .AddTypeExtension<TenantPlanMutations>();
 }

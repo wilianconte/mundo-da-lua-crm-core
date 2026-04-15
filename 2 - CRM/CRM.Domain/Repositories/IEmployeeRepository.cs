@@ -10,4 +10,6 @@ public interface IEmployeeRepository : IRepository<Employee>
 
     /// <summary>Returns true if the given employee code is already in use within the tenant.</summary>
     Task<bool> EmployeeCodeExistsAsync(Guid tenantId, string employeeCode, Guid? excludeId = null, CancellationToken ct = default);
+
+    Task<int> CountActiveByTenantAsync(Guid tenantId, CancellationToken ct = default);
 }

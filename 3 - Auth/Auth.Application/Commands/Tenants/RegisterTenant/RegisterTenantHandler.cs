@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MyCRM.Auth.Application.DTOs;
 using MyCRM.Auth.Application.Services;
 using MyCRM.Auth.Domain.Entities;
+using MyCRM.Auth.Domain.Enums;
 using MyCRM.Auth.Domain.Repositories;
 using MyCRM.Shared.Kernel.MultiTenancy;
 using MyCRM.Shared.Kernel.Results;
@@ -16,6 +17,8 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IPermissionRepository _permissionRepository;
+    private readonly IPlanRepository _planRepository;
+    private readonly ITenantPlanRepository _tenantPlanRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantService _tenantService;
     private readonly ICrmTenantProvisioningService _crmProvisioning;
@@ -27,6 +30,8 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         IUserRepository userRepository,
         IRoleRepository roleRepository,
         IPermissionRepository permissionRepository,
+        IPlanRepository planRepository,
+        ITenantPlanRepository tenantPlanRepository,
         IPasswordHasher passwordHasher,
         ITenantService tenantService,
         ICrmTenantProvisioningService crmProvisioning,
@@ -37,6 +42,8 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
         _userRepository       = userRepository;
         _roleRepository       = roleRepository;
         _permissionRepository = permissionRepository;
+        _planRepository       = planRepository;
+        _tenantPlanRepository = tenantPlanRepository;
         _passwordHasher       = passwordHasher;
         _tenantService        = tenantService;
         _crmProvisioning      = crmProvisioning;
@@ -83,6 +90,24 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
 
         await _tenantRepository.AddAsync(tenant, ct);
         await _tenantRepository.SaveChangesAsync(ct);
+
+        // 2b. Cria TenantPlan inicial com o plano Free (trial de 30 dias)
+        var freePlan = await _planRepository.GetFreePlanAsync(ct);
+        if (freePlan is not null)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var trialPlan = TenantPlan.Create(
+                tenantId:      newTenantId,
+                planId:        freePlan.Id,
+                startDate:     today,
+                endDate:       today.AddDays(30),
+                isTrial:       true,
+                fallbackPlanId: freePlan.Id,
+                status:        TenantPlanStatus.Active);
+
+            await _tenantPlanRepository.AddAsync(trialPlan, ct);
+            await _tenantPlanRepository.SaveChangesAsync(ct);
+        }
 
         // 3. Cria o Role "Administrador" para o novo tenant e atribui todas as permissões
         var adminRole = Role.Create(
@@ -137,7 +162,6 @@ public sealed class RegisterTenantHandler : IRequestHandler<RegisterTenantComman
             tenant.CompanyId,
             tenant.OwnerPersonId,
             tenant.Status,
-            tenant.Plan,
             tenant.CreatedAt,
             tenant.UpdatedAt));
     }

@@ -26,12 +26,11 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync("Nome Novo", tenant.Id, default).Returns(false);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, "Nome Novo", TenantPlan.Basic, TenantStatus.Active),
+            new UpdateTenantCommand(tenant.Id, "Nome Novo", TenantStatus.Active),
             default);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Nome Novo", result.Value!.Name);
-        Assert.Equal(TenantPlan.Basic, result.Value.Plan);
         Assert.Equal(TenantStatus.Active, result.Value.Status);
     }
 
@@ -41,7 +40,7 @@ public sealed class UpdateTenantHandlerTests
         _repository.GetByIdAsync(Arg.Any<Guid>(), default).Returns((Tenant?)null);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(Guid.NewGuid(), "Qualquer", TenantPlan.Free, TenantStatus.Active),
+            new UpdateTenantCommand(Guid.NewGuid(), "Qualquer", TenantStatus.Active),
             default);
 
         Assert.False(result.IsSuccess);
@@ -56,7 +55,7 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync("Duplicado", tenant.Id, default).Returns(true);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, "Duplicado", TenantPlan.Free, TenantStatus.Active),
+            new UpdateTenantCommand(tenant.Id, "Duplicado", TenantStatus.Active),
             default);
 
         Assert.False(result.IsSuccess);
@@ -71,7 +70,7 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync(Arg.Any<string>(), tenant.Id, default).Returns(false);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantPlan.Free, TenantStatus.Active),
+            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantStatus.Active),
             default);
 
         Assert.True(result.IsSuccess);
@@ -86,7 +85,7 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync(Arg.Any<string>(), tenant.Id, default).Returns(false);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantPlan.Free, TenantStatus.Suspended),
+            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantStatus.Suspended),
             default);
 
         Assert.True(result.IsSuccess);
@@ -101,26 +100,11 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync(Arg.Any<string>(), tenant.Id, default).Returns(false);
 
         var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantPlan.Free, TenantStatus.Cancelled),
+            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantStatus.Cancelled),
             default);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(TenantStatus.Cancelled, result.Value!.Status);
-    }
-
-    [Fact]
-    public async Task Handle_UpdatePlan_UpdatesPlan()
-    {
-        var tenant = CreateTenant();
-        _repository.GetByIdAsync(tenant.Id, default).Returns(tenant);
-        _repository.NameExistsAsync(Arg.Any<string>(), tenant.Id, default).Returns(false);
-
-        var result = await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, tenant.Name, TenantPlan.Premium, TenantStatus.Active),
-            default);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(TenantPlan.Premium, result.Value!.Plan);
     }
 
     [Fact]
@@ -131,7 +115,7 @@ public sealed class UpdateTenantHandlerTests
         _repository.NameExistsAsync(Arg.Any<string>(), tenant.Id, default).Returns(false);
 
         await _handler.Handle(
-            new UpdateTenantCommand(tenant.Id, "Novo Nome", TenantPlan.Basic, TenantStatus.Active),
+            new UpdateTenantCommand(tenant.Id, "Novo Nome", TenantStatus.Active),
             default);
 
         _repository.Received(1).Update(tenant);

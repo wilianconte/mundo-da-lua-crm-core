@@ -23,6 +23,116 @@ namespace MyCRM.Auth.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Billing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("InvoiceUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReferenceMonth")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantPlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantPlanId");
+
+                    b.HasIndex("TenantId", "ReferenceMonth")
+                        .IsUnique()
+                        .HasDatabaseName("IX_billings_tenant_month_pending")
+                        .HasFilter("\"Status\" = 0");
+
+                    b.ToTable("billings", "auth");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Feature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("features", "auth");
+                });
+
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -71,6 +181,104 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("permissions", "auth");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Plan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("plans", "auth");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.PlanFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FeatureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Value")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeatureId");
+
+                    b.HasIndex("PlanId", "FeatureId")
+                        .IsUnique();
+
+                    b.ToTable("plan_features", "auth");
                 });
 
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.RefreshToken", b =>
@@ -245,9 +453,6 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.Property<Guid?>("OwnerPersonId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Plan")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -264,6 +469,77 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("tenants", "auth");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.TenantPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("CancelledAt")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("FallbackPlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsTrial")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly?>("PausedAt")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FallbackPlanId");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_tenant_plans_tenantid_paused")
+                        .HasFilter("\"Status\" = 1");
+
+                    b.HasIndex("TenantId", "PlanId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_tenant_plans_trial_unique")
+                        .HasFilter("\"IsTrial\" = true");
+
+                    b.ToTable("tenant_plans", "auth");
                 });
 
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.User", b =>
@@ -386,6 +662,36 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.ToTable("user_roles", "auth");
                 });
 
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Billing", b =>
+                {
+                    b.HasOne("MyCRM.Auth.Domain.Entities.TenantPlan", "TenantPlan")
+                        .WithMany()
+                        .HasForeignKey("TenantPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TenantPlan");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.PlanFeature", b =>
+                {
+                    b.HasOne("MyCRM.Auth.Domain.Entities.Feature", "Feature")
+                        .WithMany("PlanFeatures")
+                        .HasForeignKey("FeatureId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MyCRM.Auth.Domain.Entities.Plan", "Plan")
+                        .WithMany("PlanFeatures")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Feature");
+
+                    b.Navigation("Plan");
+                });
+
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.RolePermission", b =>
                 {
                     b.HasOne("MyCRM.Auth.Domain.Entities.Permission", "Permission")
@@ -403,6 +709,24 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.TenantPlan", b =>
+                {
+                    b.HasOne("MyCRM.Auth.Domain.Entities.Plan", "FallbackPlan")
+                        .WithMany()
+                        .HasForeignKey("FallbackPlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MyCRM.Auth.Domain.Entities.Plan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FallbackPlan");
+
+                    b.Navigation("Plan");
                 });
 
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.UserRole", b =>
@@ -424,9 +748,19 @@ namespace MyCRM.Auth.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Feature", b =>
+                {
+                    b.Navigation("PlanFeatures");
+                });
+
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Plan", b =>
+                {
+                    b.Navigation("PlanFeatures");
                 });
 
             modelBuilder.Entity("MyCRM.Auth.Domain.Entities.Role", b =>

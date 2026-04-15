@@ -26,6 +26,13 @@ public sealed class AuthDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
+    // ── Planos e assinaturas ──────────────────────────────────────────────────
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Feature> Features => Set<Feature>();
+    public DbSet<PlanFeature> PlanFeatures => Set<PlanFeature>();
+    public DbSet<TenantPlan> TenantPlans => Set<TenantPlan>();
+    public DbSet<Billing> Billings => Set<Billing>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("auth");
@@ -51,8 +58,26 @@ public sealed class AuthDbContext : DbContext
                 !x.Role.IsDeleted &&
                 x.Role.TenantId == _tenant.TenantId);
 
-        // Tenant nao e filtrado por TenantId (e a raiz do tenant); apenas soft-delete.
+        // Tenant não é filtrado por TenantId (é a raiz do tenant); apenas soft-delete.
         modelBuilder.Entity<Tenant>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        // Entidades de plano são globais — apenas soft-delete.
+        modelBuilder.Entity<Plan>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        modelBuilder.Entity<Feature>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        modelBuilder.Entity<PlanFeature>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        // TenantPlan e Billing: sem query filter global por TenantId —
+        // os repositórios filtram explicitamente via tenantId no parâmetro.
+        modelBuilder.Entity<TenantPlan>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        modelBuilder.Entity<Billing>()
             .HasQueryFilter(x => !x.IsDeleted);
 
         base.OnModelCreating(modelBuilder);
