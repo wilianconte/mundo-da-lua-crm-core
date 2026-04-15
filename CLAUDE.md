@@ -29,8 +29,9 @@ Execute **sempre** nesta ordem, sem pular etapas:
 5. Escrever testes unitários             ← obrigatório antes do commit
 6. dotnet build MyCRM.sln               ← zero erros exigido
 7. dotnet test "4 - Tests/UnitTests/MyCRM.UnitTests.csproj"  ← zero falhas exigido
-8. Atualizar skill core com novos conhecimentos
-9. gh pr create --base dev              ← só se build ✅ e testes ✅
+8. Criar build/output/<YYYY-MM-DD>-<descricao>.md            ← obrigatório
+9. Atualizar skill core com novos conhecimentos
+10. gh pr create --base dev             ← só se build ✅ e testes ✅
 ```
 
 > **O hook no `.claude/settings.json` bloqueia automaticamente `gh pr create`
@@ -47,6 +48,43 @@ Execute **sempre** nesta ordem, sem pular etapas:
 | Commit direto em `dev` ou `main` | **proibido** |
 
 O link do PR deve ser reportado ao usuário ao final de cada tarefa.
+
+---
+
+## REGISTRO DE IMPLEMENTAÇÕES (obrigatório)
+
+Ao finalizar qualquer implementação, crie um arquivo Markdown em `build/output/`:
+
+**Caminho:** `build/output/<YYYY-MM-DD>-<descricao-kebab>.md`
+
+**Estrutura mínima:**
+
+```markdown
+# <Título da implementação>
+
+**Data:** YYYY-MM-DD
+**Branch:** claude/<nome>
+**Decisão arquitetural:** DEC-XXX (se aplicável)
+
+## O que foi feito
+Descrição das mudanças: entidades, handlers, migrations, seeds, mutations, testes.
+
+## Arquivos criados ou modificados
+- `caminho/arquivo.cs` — descrição breve
+
+## Decisões tomadas
+- Contexto e alternativas descartadas (o que não está óbvio no código)
+
+## Impacto em outras partes do sistema
+- Dependências / integrações afetadas
+
+## Testes
+- N testes criados/atualizados — cenários cobertos
+```
+
+> Este arquivo é consumido pelo **agente guardião de regras** para rastrear
+> o histórico de decisões e garantir consistência arquitetural entre sessões.
+> A pasta `build/input/` pode conter prompts/specs de entrada fornecidos pelo usuário.
 
 ---
 
