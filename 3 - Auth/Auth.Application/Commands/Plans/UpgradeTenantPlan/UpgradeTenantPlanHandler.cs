@@ -39,6 +39,11 @@ public sealed class UpgradeTenantPlanHandler : IRequestHandler<UpgradeTenantPlan
             return Result.Failure("UPGRADE_TO_FREE_NOT_ALLOWED",
                 "Para migrar para o plano gratuito, utilize o cancelamento com plano de destino Free.");
 
+        // 3b. Valida que o plano não está em PendingCancellation (RN-029.10)
+        if (activePlan.Status == TenantPlanStatus.PendingCancellation)
+            return Result.Failure("UPGRADE_BLOCKED_PENDING_CANCELLATION",
+                "Não é possível fazer upgrade com cancelamento pendente. Reverta o cancelamento primeiro.");
+
         // 4. Valida que o novo plano é diferente do atual
         if (activePlan.PlanId == request.NewPlanId)
             return Result.Failure("PLAN_SAME_AS_CURRENT", "O tenant já está neste plano.");

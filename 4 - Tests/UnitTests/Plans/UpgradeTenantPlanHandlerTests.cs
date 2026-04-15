@@ -141,6 +141,30 @@ public sealed class UpgradeTenantPlanHandlerTests
     }
 
     /// <summary>
+    /// Problema: tenant com cancelamento pendente tenta fazer upgrade sem antes reverter o cancelamento.
+    /// Pela RN-029.10, o status PendingCancellation bloqueia qualquer upgrade — o tenant deve
+    /// chamar RevertCancellation primeiro para restaurar o plano ao estado Active.
+    /// </summary>
+    [Fact]
+    public async Task Handle_PlanPendingCancellation_ReturnsUpgradeBlockedPendingCancellation()
+    {
+        var tenantId    = Guid.NewGuid();
+        var currentPlan = CreatePlan("pro", 99m);
+        var newPlan     = CreatePlan("enterprise", 199m);
+        var active      = CreateTenantPlan(tenantId, currentPlan,
+            status: TenantPlanStatus.PendingCancellation);
+
+        _tenantPlanRepo.GetActiveByTenantIdAsync(tenantId, default).Returns(active);
+        _planRepo.GetByIdAsync(newPlan.Id, default).Returns(newPlan);
+
+        var result = await _handler.Handle(
+            new UpgradeTenantPlanCommand(tenantId, newPlan.Id), default);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("UPGRADE_BLOCKED_PENDING_CANCELLATION", result.ErrorCode);
+    }
+
+    /// <summary>
     /// Problema: tenant tenta fazer "upgrade" para o mesmo plano que já possui.
     /// Deve ser rejeitado para evitar duplicidade de cobranças e planos.
     /// </summary>

@@ -44,6 +44,20 @@ public sealed class TenantPlanQueries
             .OrderBy(x => x.SortOrder);
 
     /// <summary>
+    /// Retorna os dados básicos do tenant autenticado.
+    /// Usado pelo frontend para detectar suspensão por inadimplência (Tenant.Status = Suspended).
+    /// </summary>
+    [Authorize]
+    [UseFirstOrDefault]
+    [UseProjection]
+    public IQueryable<Tenant> GetMyTenant(
+        [Service] AuthDbContext db,
+        [Service] ITenantService tenantService)
+        => db.Tenants
+            .AsNoTracking()
+            .Where(x => x.Id == tenantService.TenantId);
+
+    /// <summary>
     /// Retorna o histórico de cobranças do tenant autenticado, paginado.
     /// Requer a permissão plans:manage.
     /// </summary>
