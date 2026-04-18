@@ -42,6 +42,28 @@ public static class SystemPermissions
     public const string CompaniesUpdate = "companies:update";
     public const string CompaniesDelete = "companies:delete";
 
+    public const string WalletsRead   = "wallets:read";
+    public const string WalletsCreate = "wallets:create";
+    public const string WalletsUpdate = "wallets:update";
+    public const string WalletsDelete = "wallets:delete";
+
+    public const string CategoriesRead   = "categories:read";
+    public const string CategoriesCreate = "categories:create";
+    public const string CategoriesUpdate = "categories:update";
+    public const string CategoriesDelete = "categories:delete";
+
+    public const string PaymentMethodsRead   = "payment_methods:read";
+    public const string PaymentMethodsCreate = "payment_methods:create";
+    public const string PaymentMethodsUpdate = "payment_methods:update";
+    public const string PaymentMethodsDelete = "payment_methods:delete";
+
+    public const string TransactionsRead     = "transactions:read";
+    public const string TransactionsCreate   = "transactions:create";
+    public const string TransactionsUpdate   = "transactions:update";
+    public const string TransactionsDelete   = "transactions:delete";
+    public const string TransactionsReconcile = "transactions:reconcile";
+    public const string TransactionsTransfer  = "transactions:transfer";
+
     public const string UsersManage   = "users:manage";
     public const string RolesManage   = "roles:manage";
     public const string TenantsManage = "tenants:manage";
@@ -81,6 +103,24 @@ public static class SystemPermissions
         (CompaniesCreate, "Empresas"),
         (CompaniesUpdate, "Empresas"),
         (CompaniesDelete, "Empresas"),
+        (WalletsRead,   "Financeiro"),
+        (WalletsCreate, "Financeiro"),
+        (WalletsUpdate, "Financeiro"),
+        (WalletsDelete, "Financeiro"),
+        (CategoriesRead,   "Financeiro"),
+        (CategoriesCreate, "Financeiro"),
+        (CategoriesUpdate, "Financeiro"),
+        (CategoriesDelete, "Financeiro"),
+        (PaymentMethodsRead,   "Financeiro"),
+        (PaymentMethodsCreate, "Financeiro"),
+        (PaymentMethodsUpdate, "Financeiro"),
+        (PaymentMethodsDelete, "Financeiro"),
+        (TransactionsRead,      "Financeiro"),
+        (TransactionsCreate,    "Financeiro"),
+        (TransactionsUpdate,    "Financeiro"),
+        (TransactionsDelete,    "Financeiro"),
+        (TransactionsReconcile, "Financeiro"),
+        (TransactionsTransfer,  "Financeiro"),
         (UsersManage,   "Administração"),
         (RolesManage,   "Administração"),
         (TenantsManage, "Administração"),

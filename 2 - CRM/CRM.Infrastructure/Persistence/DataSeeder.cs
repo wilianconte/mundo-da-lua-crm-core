@@ -18,6 +18,7 @@ public static class DataSeeder
         await SeedCompaniesAsync(db);
         await SeedCoursesAsync(db);
         await SeedEmployeesAsync(db);
+        await SeedPaymentMethodsAsync(db);
     }
 
     // ── Person do Administrador ───────────────────────────────────────────────
@@ -580,6 +581,24 @@ public static class DataSeeder
         };
 
         await db.Employees.AddRangeAsync(employees);
+        await db.SaveChangesAsync();
+    }
+
+    // ── PaymentMethods ────────────────────────────────────────────────────────
+
+    private static async Task SeedPaymentMethodsAsync(CRMDbContext db)
+    {
+        if (await db.PaymentMethods.AnyAsync())
+            return;
+
+        var methods = new[]
+        {
+            PaymentMethod.Create(SeedTenantId, "PIX"),
+            PaymentMethod.Create(SeedTenantId, "Cartão"),
+            PaymentMethod.Create(SeedTenantId, "Dinheiro"),
+        };
+
+        await db.PaymentMethods.AddRangeAsync(methods);
         await db.SaveChangesAsync();
     }
 

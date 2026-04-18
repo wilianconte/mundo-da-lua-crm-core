@@ -30,6 +30,11 @@ public static class DependencyInjection
         new CourseMappingConfig().Register(config);
         new StudentCourseMappingConfig().Register(config);
         new EmployeeMappingConfig().Register(config);
+        new WalletMappingConfig().Register(config);
+        new CategoryMappingConfig().Register(config);
+        new PaymentMethodMappingConfig().Register(config);
+        new TransactionMappingConfig().Register(config);
+        new ReconciliationMappingConfig().Register(config);
 
         return services;
     }
