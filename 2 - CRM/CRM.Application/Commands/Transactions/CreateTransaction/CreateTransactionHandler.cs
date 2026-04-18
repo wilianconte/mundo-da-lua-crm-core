@@ -13,17 +13,20 @@ public sealed class CreateTransactionHandler : IRequestHandler<CreateTransaction
     private readonly ITransactionRepository  _transactions;
     private readonly IWalletRepository       _wallets;
     private readonly IPaymentMethodRepository _paymentMethods;
+    private readonly ICategoryRepository     _categories;
     private readonly ITenantService          _tenant;
 
     public CreateTransactionHandler(
         ITransactionRepository  transactions,
         IWalletRepository       wallets,
         IPaymentMethodRepository paymentMethods,
+        ICategoryRepository     categories,
         ITenantService          tenant)
     {
         _transactions   = transactions;
         _wallets        = wallets;
         _paymentMethods = paymentMethods;
+        _categories     = categories;
         _tenant         = tenant;
     }
 
@@ -39,6 +42,10 @@ public sealed class CreateTransactionHandler : IRequestHandler<CreateTransaction
         var paymentMethod = await _paymentMethods.GetByIdAsync(request.PaymentMethodId, ct);
         if (paymentMethod is null)
             return Result<TransactionDto>.Failure("PAYMENT_METHOD_NOT_FOUND", "Payment method not found.");
+
+        var category = await _categories.GetByIdAsync(request.CategoryId, ct);
+        if (category is null)
+            return Result<TransactionDto>.Failure("CATEGORY_NOT_FOUND", "Category not found.");
 
         var transaction = Transaction.Create(
             _tenant.TenantId,

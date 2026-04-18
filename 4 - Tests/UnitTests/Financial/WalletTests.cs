@@ -47,14 +47,16 @@ public sealed class WalletTests
     {
         var wallet = Wallet.Create(_tenantId, "Caixa", 0);
         var paymentMethod = PaymentMethod.Create(_tenantId, "PIX");
+        var category = Category.Create(_tenantId, "Receita");
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
+        _categories.GetByIdAsync(category.Id, default).Returns(category);
         _transactions.SaveChangesAsync(default).Returns(1);
 
-        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _tenant);
+        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _categories, _tenant);
         var result = await handler.Handle(new CreateTransactionCommand(
             wallet.Id, TransactionType.Income, 500m, "Mensalidade",
-            Guid.NewGuid(), paymentMethod.Id, DateTime.Today), default);
+            category.Id, paymentMethod.Id, DateTime.Today), default);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(TransactionType.Income, result.Value!.Type);
@@ -67,14 +69,16 @@ public sealed class WalletTests
     {
         var wallet = Wallet.Create(_tenantId, "Caixa", 1000m);
         var paymentMethod = PaymentMethod.Create(_tenantId, "Dinheiro");
+        var category = Category.Create(_tenantId, "Despesa");
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
+        _categories.GetByIdAsync(category.Id, default).Returns(category);
         _transactions.SaveChangesAsync(default).Returns(1);
 
-        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _tenant);
+        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _categories, _tenant);
         var result = await handler.Handle(new CreateTransactionCommand(
             wallet.Id, TransactionType.Expense, 200m, "Aluguel",
-            Guid.NewGuid(), paymentMethod.Id, DateTime.Today), default);
+            category.Id, paymentMethod.Id, DateTime.Today), default);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(TransactionType.Expense, result.Value!.Type);
@@ -230,13 +234,54 @@ public sealed class WalletTests
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(Arg.Any<Guid>(), default).Returns((PaymentMethod?)null);
 
-        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _tenant);
+        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _categories, _tenant);
         var result = await handler.Handle(new CreateTransactionCommand(
             wallet.Id, TransactionType.Income, 100m, "Desc",
             Guid.NewGuid(), Guid.NewGuid(), DateTime.Today), default);
 
         Assert.False(result.IsSuccess);
         Assert.Equal("PAYMENT_METHOD_NOT_FOUND", result.ErrorCode);
+    }
+
+    // CT-LAC014: Transferência com carteira de origem inativa (deve falhar)
+    [Fact]
+    public async Task CreateTransfer_InactiveSourceWallet_ReturnsFailure()
+    {
+        var fromWallet = Wallet.Create(_tenantId, "Conta Inativa", 1000m);
+        fromWallet.SetInactive();
+        var toWallet = Wallet.Create(_tenantId, "Destino", 0m);
+
+        _wallets.GetByIdAsync(fromWallet.Id, default).Returns(fromWallet);
+        _wallets.GetByIdAsync(toWallet.Id, default).Returns(toWallet);
+
+        var handler = new CreateTransferHandler(_transactions, _wallets, _tenant);
+        var result = await handler.Handle(new CreateTransferCommand(
+            fromWallet.Id, toWallet.Id, 300m, "Transferência",
+            Guid.NewGuid(), Guid.NewGuid(), DateTime.Today), default);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("WALLET_INACTIVE", result.ErrorCode);
+        await _transactions.DidNotReceive().SaveChangesAsync(default);
+    }
+
+    // CT-LAC015: Registrar transação com CategoryId inexistente (deve falhar)
+    [Fact]
+    public async Task CreateTransaction_CategoryNotFound_ReturnsFailure()
+    {
+        var wallet = Wallet.Create(_tenantId, "Caixa", 1000m);
+        var paymentMethod = PaymentMethod.Create(_tenantId, "PIX");
+        _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
+        _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
+        _categories.GetByIdAsync(Arg.Any<Guid>(), default).Returns((Category?)null);
+
+        var handler = new CreateTransactionHandler(_transactions, _wallets, _paymentMethods, _categories, _tenant);
+        var result = await handler.Handle(new CreateTransactionCommand(
+            wallet.Id, TransactionType.Income, 100m, "Desc",
+            Guid.NewGuid(), paymentMethod.Id, DateTime.Today), default);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("CATEGORY_NOT_FOUND", result.ErrorCode);
+        await _transactions.DidNotReceive().SaveChangesAsync(default);
     }
 
     // CT-010: Listar transações por período (domain rule test — não precisa de handler, testa a entidade)

@@ -29,10 +29,14 @@ public sealed class CreateTransferHandler : IRequestHandler<CreateTransferComman
         var fromWallet = await _wallets.GetByIdAsync(request.FromWalletId, ct);
         if (fromWallet is null)
             return Result<TransferResultDto>.Failure("WALLET_NOT_FOUND", "Source wallet not found.");
+        if (!fromWallet.IsActive)
+            return Result<TransferResultDto>.Failure("WALLET_INACTIVE", "Source wallet is inactive.");
 
         var toWallet = await _wallets.GetByIdAsync(request.ToWalletId, ct);
         if (toWallet is null)
             return Result<TransferResultDto>.Failure("WALLET_NOT_FOUND", "Destination wallet not found.");
+        if (!toWallet.IsActive)
+            return Result<TransferResultDto>.Failure("WALLET_INACTIVE", "Destination wallet is inactive.");
 
         var currentBalance = await _wallets.GetCurrentBalanceAsync(request.FromWalletId, ct);
         if (currentBalance < request.Amount)
