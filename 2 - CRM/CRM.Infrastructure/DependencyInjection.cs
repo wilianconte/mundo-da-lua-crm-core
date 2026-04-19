@@ -33,6 +33,19 @@ public static class DependencyInjection
         services.AddScoped<IReconciliationRepository, ReconciliationRepository>();
         services.AddScoped<ICrmTenantProvisioningService, CrmTenantProvisioningService>();
 
+        // Agendamentos
+        services.AddScoped<IProfessionalSpecialtyRepository, ProfessionalSpecialtyRepository>();
+        services.AddScoped<IProfessionalSpecialtyLinkRepository, ProfessionalSpecialtyLinkRepository>();
+        services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
+        services.AddScoped<IPatientRepository, PatientRepository>();
+        services.AddScoped<IServiceRepository, ServiceRepository>();
+        services.AddScoped<IProfessionalServiceRepository, ProfessionalServiceRepository>();
+        services.AddScoped<ICommissionRuleRepository, CommissionRuleRepository>();
+        services.AddScoped<IProfessionalScheduleRepository, ProfessionalScheduleRepository>();
+        services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+        services.AddScoped<IAppointmentRecurrenceRepository, AppointmentRecurrenceRepository>();
+        services.AddScoped<IAppointmentTaskRepository, AppointmentTaskRepository>();
+
         return services;
     }
 }
