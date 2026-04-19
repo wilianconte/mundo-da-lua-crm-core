@@ -5,6 +5,10 @@ namespace MyCRM.CRM.Domain.Entities;
 public sealed class PaymentMethod : TenantEntity
 {
     public string Name { get; private set; } = string.Empty;
+    public Guid? WalletId { get; private set; }
+
+    // EF Core navigation — do not use in domain logic
+    public Wallet? Wallet { get; private set; }
 
     private PaymentMethod() { }
 
