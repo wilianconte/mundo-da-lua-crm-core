@@ -26,6 +26,11 @@ public static class DependencyInjection
         services.AddScoped<ICourseRepository, CourseRepository>();
         services.AddScoped<IStudentCourseRepository, StudentCourseRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<IWalletRepository, WalletRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IReconciliationRepository, ReconciliationRepository>();
         services.AddScoped<ICrmTenantProvisioningService, CrmTenantProvisioningService>();
 
         return services;

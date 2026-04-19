@@ -9,6 +9,7 @@ using MyCRM.GraphQL.GraphQL.Courses;
 using MyCRM.GraphQL.GraphQL.StudentCourses;
 using MyCRM.GraphQL.GraphQL.Employees;
 using MyCRM.GraphQL.GraphQL.Enums;
+using MyCRM.GraphQL.GraphQL.Financial;
 
 namespace MyCRM.GraphQL.Extensions;
 
@@ -44,5 +45,14 @@ public static class CrmGraphQLExtensions
         .AddTypeExtension<StudentCourseMutations>()
         // Employees
         .AddTypeExtension<EmployeeQueries>()
-        .AddTypeExtension<EmployeeMutations>();
+        .AddTypeExtension<EmployeeMutations>()
+        // Financial
+        .AddTypeExtension<WalletQueries>()
+        .AddTypeExtension<WalletMutations>()
+        .AddTypeExtension<CategoryQueries>()
+        .AddTypeExtension<CategoryMutations>()
+        .AddTypeExtension<PaymentMethodQueries>()
+        .AddTypeExtension<PaymentMethodMutations>()
+        .AddTypeExtension<TransactionQueries>()
+        .AddTypeExtension<TransactionMutations>();
 }

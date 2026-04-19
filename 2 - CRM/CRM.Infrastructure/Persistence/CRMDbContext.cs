@@ -26,6 +26,11 @@ public sealed class CRMDbContext : DbContext
     public DbSet<Course>          Courses          => Set<Course>();
     public DbSet<StudentCourse>   StudentCourses   => Set<StudentCourse>();
     public DbSet<Employee>        Employees        => Set<Employee>();
+    public DbSet<Wallet>          Wallets          => Set<Wallet>();
+    public DbSet<Category>        FinancialCategories => Set<Category>();
+    public DbSet<PaymentMethod>   PaymentMethods   => Set<PaymentMethod>();
+    public DbSet<Transaction>     Transactions     => Set<Transaction>();
+    public DbSet<Reconciliation>  Reconciliations  => Set<Reconciliation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +59,21 @@ public sealed class CRMDbContext : DbContext
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         modelBuilder.Entity<Employee>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<Wallet>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<Category>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<PaymentMethod>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<Transaction>()
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
+
+        modelBuilder.Entity<Reconciliation>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         base.OnModelCreating(modelBuilder);
