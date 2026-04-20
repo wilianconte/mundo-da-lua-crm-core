@@ -27,6 +27,7 @@ public class AuthMutations
             input.Email,
             input.Password,
             input.PersonId,
+            input.IsAdmin,
             input.RoleIds), ct);
 
         return result.IsSuccess

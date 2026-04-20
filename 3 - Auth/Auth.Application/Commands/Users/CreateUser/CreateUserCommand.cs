@@ -9,5 +9,6 @@ public record CreateUserCommand(
     string Email,
     string Password,
     Guid? PersonId,
+    bool IsAdmin = false,
     IReadOnlyList<Guid>? RoleIds = null
 ) : IRequest<Result<UserDto>>;

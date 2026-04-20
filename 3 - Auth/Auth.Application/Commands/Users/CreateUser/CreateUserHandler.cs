@@ -52,6 +52,9 @@ public sealed class CreateUserHandler : IRequestHandler<CreateUserCommand, Resul
             passwordHash: passwordHash,
             personId: request.PersonId);
 
+        if (request.IsAdmin)
+            user.SetAdmin();
+
         if (request.RoleIds is not null)
             user.SyncRoles(request.RoleIds);
 

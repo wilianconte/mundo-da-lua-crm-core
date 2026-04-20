@@ -5,5 +5,6 @@ public record CreateUserInput(
     string Email,
     string Password,
     Guid? PersonId,
+    bool IsAdmin = false,
     IReadOnlyList<Guid>? RoleIds = null
 );
