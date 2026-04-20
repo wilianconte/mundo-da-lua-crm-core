@@ -841,7 +841,7 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("WalletId")
+                    b.Property<Guid>("WalletId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -1987,7 +1987,8 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.HasOne("MyCRM.CRM.Domain.Entities.Wallet", "Wallet")
                         .WithMany()
                         .HasForeignKey("WalletId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Wallet");
                 });

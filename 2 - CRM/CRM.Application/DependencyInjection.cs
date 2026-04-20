@@ -35,6 +35,15 @@ public static class DependencyInjection
         new PaymentMethodMappingConfig().Register(config);
         new TransactionMappingConfig().Register(config);
         new ReconciliationMappingConfig().Register(config);
+        new ProfessionalMappingConfig().Register(config);
+        new PatientMappingConfig().Register(config);
+        new ServiceMappingConfig().Register(config);
+        new ProfessionalServiceMappingConfig().Register(config);
+        new CommissionRuleMappingConfig().Register(config);
+        new ProfessionalScheduleMappingConfig().Register(config);
+        new AppointmentMappingConfig().Register(config);
+        new AppointmentRecurrenceMappingConfig().Register(config);
+        new AppointmentTaskMappingConfig().Register(config);
 
         return services;
     }

@@ -1,3 +1,3 @@
 namespace MyCRM.GraphQL.GraphQL.Financial.Inputs;
 
-public record CreatePaymentMethodInput(string Name);
+public record CreatePaymentMethodInput(string Name, Guid WalletId);

@@ -10,6 +10,8 @@ using MyCRM.GraphQL.GraphQL.StudentCourses;
 using MyCRM.GraphQL.GraphQL.Employees;
 using MyCRM.GraphQL.GraphQL.Enums;
 using MyCRM.GraphQL.GraphQL.Financial;
+using MyCRM.GraphQL.GraphQL.Scheduling;
+using MyCRM.GraphQL.GraphQL.Scheduling.Types;
 
 namespace MyCRM.GraphQL.Extensions;
 
@@ -54,5 +56,28 @@ public static class CrmGraphQLExtensions
         .AddTypeExtension<PaymentMethodQueries>()
         .AddTypeExtension<PaymentMethodMutations>()
         .AddTypeExtension<TransactionQueries>()
-        .AddTypeExtension<TransactionMutations>();
+        .AddTypeExtension<TransactionMutations>()
+        // Scheduling
+        .AddTypeExtension<SchedulingQueries>()
+        .AddTypeExtension<SchedulingMutations>()
+        .AddType<ProfessionalType>()
+        .AddType<ProfessionalSpecialtyType>()
+        .AddType<ProfessionalSpecialtyLinkType>()
+        .AddType<PatientType>()
+        .AddType<ServiceType>()
+        .AddType<ProfessionalServiceType>()
+        .AddType<CommissionRuleType>()
+        .AddType<ProfessionalScheduleType>()
+        .AddType<AppointmentObjectType>()
+        .AddType<AppointmentRecurrenceType>()
+        .AddType<AppointmentTaskObjectType>()
+        .AddType<AppointmentConflictWarningType>()
+        .AddType<ProfessionalStatusType>()
+        .AddType<PatientStatusType>()
+        .AddType<AppointmentStatusType>()
+        .AddType<AppointmentTypeEnumType>()
+        .AddType<AppointmentTaskStatusType>()
+        .AddType<AppointmentTaskTypeEnumType>()
+        .AddType<RecurrenceFrequencyType>()
+        .AddType<PaymentReceiverTypeEnumType>();
 }

@@ -21,7 +21,7 @@ public sealed class CreatePaymentMethodHandler : IRequestHandler<CreatePaymentMe
 
     public async Task<Result<PaymentMethodDto>> Handle(CreatePaymentMethodCommand request, CancellationToken ct)
     {
-        var method = PaymentMethod.Create(_tenant.TenantId, request.Name);
+        var method = PaymentMethod.Create(_tenant.TenantId, request.Name, request.WalletId);
         await _repository.AddAsync(method, ct);
         await _repository.SaveChangesAsync(ct);
         return Result<PaymentMethodDto>.Success(method.Adapt<PaymentMethodDto>());

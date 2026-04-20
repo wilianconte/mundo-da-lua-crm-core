@@ -18,6 +18,7 @@ public static class DataSeeder
         await SeedCompaniesAsync(db);
         await SeedCoursesAsync(db);
         await SeedEmployeesAsync(db);
+        await SeedWalletsAsync(db);
         await SeedPaymentMethodsAsync(db);
     }
 
@@ -584,6 +585,24 @@ public static class DataSeeder
         await db.SaveChangesAsync();
     }
 
+    // ── Wallets ──────────────────────────────────────────────────────────────
+
+    private static async Task SeedWalletsAsync(CRMDbContext db)
+    {
+        if (await db.Wallets.AnyAsync())
+            return;
+
+        var wallets = new[]
+        {
+            Wallet.Create(SeedTenantId, "Caixa — PIX", 0m),
+            Wallet.Create(SeedTenantId, "Caixa — Cartão", 0m),
+            Wallet.Create(SeedTenantId, "Caixa — Dinheiro", 0m),
+        };
+
+        await db.Wallets.AddRangeAsync(wallets);
+        await db.SaveChangesAsync();
+    }
+
     // ── PaymentMethods ────────────────────────────────────────────────────────
 
     private static async Task SeedPaymentMethodsAsync(CRMDbContext db)
@@ -591,11 +610,19 @@ public static class DataSeeder
         if (await db.PaymentMethods.AnyAsync())
             return;
 
+        var wallets = await db.Wallets.ToListAsync();
+        var pixWallet = wallets.FirstOrDefault(w => w.Name == "Caixa — PIX");
+        var cartaoWallet = wallets.FirstOrDefault(w => w.Name == "Caixa — Cartão");
+        var dinheiroWallet = wallets.FirstOrDefault(w => w.Name == "Caixa — Dinheiro");
+
+        if (pixWallet is null || cartaoWallet is null || dinheiroWallet is null)
+            return;
+
         var methods = new[]
         {
-            PaymentMethod.Create(SeedTenantId, "PIX"),
-            PaymentMethod.Create(SeedTenantId, "Cartão"),
-            PaymentMethod.Create(SeedTenantId, "Dinheiro"),
+            PaymentMethod.Create(SeedTenantId, "PIX", pixWallet.Id),
+            PaymentMethod.Create(SeedTenantId, "Cartão", cartaoWallet.Id),
+            PaymentMethod.Create(SeedTenantId, "Dinheiro", dinheiroWallet.Id),
         };
 
         await db.PaymentMethods.AddRangeAsync(methods);
