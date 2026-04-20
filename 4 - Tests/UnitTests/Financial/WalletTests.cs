@@ -46,7 +46,7 @@ public sealed class WalletTests
     public async Task CreateTransaction_Income_ReturnsSuccess()
     {
         var wallet = Wallet.Create(_tenantId, "Caixa", 0);
-        var paymentMethod = PaymentMethod.Create(_tenantId, "PIX");
+        var paymentMethod = PaymentMethod.Create(_tenantId, "PIX", Guid.NewGuid());
         var category = Category.Create(_tenantId, "Receita");
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
@@ -68,7 +68,7 @@ public sealed class WalletTests
     public async Task CreateTransaction_Expense_ReturnsSuccess()
     {
         var wallet = Wallet.Create(_tenantId, "Caixa", 1000m);
-        var paymentMethod = PaymentMethod.Create(_tenantId, "Dinheiro");
+        var paymentMethod = PaymentMethod.Create(_tenantId, "Dinheiro", Guid.NewGuid());
         var category = Category.Create(_tenantId, "Despesa");
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
@@ -269,7 +269,7 @@ public sealed class WalletTests
     public async Task CreateTransaction_CategoryNotFound_ReturnsFailure()
     {
         var wallet = Wallet.Create(_tenantId, "Caixa", 1000m);
-        var paymentMethod = PaymentMethod.Create(_tenantId, "PIX");
+        var paymentMethod = PaymentMethod.Create(_tenantId, "PIX", Guid.NewGuid());
         _wallets.GetByIdAsync(wallet.Id, default).Returns(wallet);
         _paymentMethods.GetByIdAsync(paymentMethod.Id, default).Returns(paymentMethod);
         _categories.GetByIdAsync(Arg.Any<Guid>(), default).Returns((Category?)null);

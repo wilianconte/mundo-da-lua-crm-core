@@ -16,10 +16,12 @@ public sealed class PaymentMethodConfiguration : IEntityTypeConfiguration<Paymen
         builder.Property(x => x.IsDeleted).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.CreatedAt).IsRequired();
 
+        builder.Property(x => x.WalletId).IsRequired();
+
         builder.HasOne(x => x.Wallet)
             .WithMany()
             .HasForeignKey(x => x.WalletId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new { x.TenantId, x.Name })
             .HasFilter("\"IsDeleted\" = false");

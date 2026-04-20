@@ -841,7 +841,7 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("WalletId")
+                    b.Property<Guid>("WalletId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -1224,7 +1224,8 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.HasIndex("SpecialtyId");
 
                     b.HasIndex("ProfessionalId", "SpecialtyId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("professional_specialty_links", "crm");
                 });
@@ -1987,7 +1988,8 @@ namespace MyCRM.CRM.Infrastructure.Migrations
                     b.HasOne("MyCRM.CRM.Domain.Entities.Wallet", "Wallet")
                         .WithMany()
                         .HasForeignKey("WalletId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Wallet");
                 });

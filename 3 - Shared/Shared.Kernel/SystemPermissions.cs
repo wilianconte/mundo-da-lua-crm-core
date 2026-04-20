@@ -64,10 +64,48 @@ public static class SystemPermissions
     public const string TransactionsReconcile = "transactions:reconcile";
     public const string TransactionsTransfer  = "transactions:transfer";
 
-    public const string UsersManage   = "users:manage";
-    public const string RolesManage   = "roles:manage";
+    public const string ProfessionalsRead = "professionals:read";
+    public const string ProfessionalsCreate = "professionals:create";
+    public const string ProfessionalsUpdate = "professionals:update";
+    public const string ProfessionalsDelete = "professionals:delete";
+
+    public const string PatientsRead = "patients:read";
+    public const string PatientsCreate = "patients:create";
+    public const string PatientsUpdate = "patients:update";
+    public const string PatientsDelete = "patients:delete";
+
+    public const string ServicesRead = "services:read";
+    public const string ServicesCreate = "services:create";
+    public const string ServicesUpdate = "services:update";
+    public const string ServicesDelete = "services:delete";
+
+    public const string ProfessionalServicesRead = "professional_services:read";
+    public const string ProfessionalServicesCreate = "professional_services:create";
+    public const string ProfessionalServicesUpdate = "professional_services:update";
+    public const string ProfessionalServicesDelete = "professional_services:delete";
+
+    public const string CommissionRulesRead = "commission_rules:read";
+    public const string CommissionRulesCreate = "commission_rules:create";
+    public const string CommissionRulesUpdate = "commission_rules:update";
+    public const string CommissionRulesDelete = "commission_rules:delete";
+
+    public const string ProfessionalSchedulesRead = "professional_schedules:read";
+    public const string ProfessionalSchedulesCreate = "professional_schedules:create";
+    public const string ProfessionalSchedulesUpdate = "professional_schedules:update";
+    public const string ProfessionalSchedulesDelete = "professional_schedules:delete";
+
+    public const string AppointmentsRead = "appointments:read";
+    public const string AppointmentsCreate = "appointments:create";
+    public const string AppointmentsUpdate = "appointments:update";
+    public const string AppointmentsDelete = "appointments:delete";
+
+    public const string AppointmentTasksRead = "appointment_tasks:read";
+    public const string AppointmentTasksManage = "appointment_tasks:manage";
+
+    public const string UsersManage = "users:manage";
+    public const string RolesManage = "roles:manage";
     public const string TenantsManage = "tenants:manage";
-    public const string PlansManage   = "plans:manage";
+    public const string PlansManage = "plans:manage";
 
     public static IReadOnlyList<(string Name, string Group)> All =>
     [
@@ -121,9 +159,39 @@ public static class SystemPermissions
         (TransactionsDelete,    "Financeiro"),
         (TransactionsReconcile, "Financeiro"),
         (TransactionsTransfer,  "Financeiro"),
-        (UsersManage,   "Administração"),
-        (RolesManage,   "Administração"),
+        (ProfessionalsRead, "Agendamentos"),
+        (ProfessionalsCreate, "Agendamentos"),
+        (ProfessionalsUpdate, "Agendamentos"),
+        (ProfessionalsDelete, "Agendamentos"),
+        (PatientsRead, "Agendamentos"),
+        (PatientsCreate, "Agendamentos"),
+        (PatientsUpdate, "Agendamentos"),
+        (PatientsDelete, "Agendamentos"),
+        (ServicesRead, "Agendamentos"),
+        (ServicesCreate, "Agendamentos"),
+        (ServicesUpdate, "Agendamentos"),
+        (ServicesDelete, "Agendamentos"),
+        (ProfessionalServicesRead, "Agendamentos"),
+        (ProfessionalServicesCreate, "Agendamentos"),
+        (ProfessionalServicesUpdate, "Agendamentos"),
+        (ProfessionalServicesDelete, "Agendamentos"),
+        (CommissionRulesRead, "Agendamentos"),
+        (CommissionRulesCreate, "Agendamentos"),
+        (CommissionRulesUpdate, "Agendamentos"),
+        (CommissionRulesDelete, "Agendamentos"),
+        (ProfessionalSchedulesRead, "Agendamentos"),
+        (ProfessionalSchedulesCreate, "Agendamentos"),
+        (ProfessionalSchedulesUpdate, "Agendamentos"),
+        (ProfessionalSchedulesDelete, "Agendamentos"),
+        (AppointmentsRead, "Agendamentos"),
+        (AppointmentsCreate, "Agendamentos"),
+        (AppointmentsUpdate, "Agendamentos"),
+        (AppointmentsDelete, "Agendamentos"),
+        (AppointmentTasksRead, "Agendamentos"),
+        (AppointmentTasksManage, "Agendamentos"),
+        (UsersManage, "Administração"),
+        (RolesManage, "Administração"),
         (TenantsManage, "Administração"),
-        (PlansManage,   "Administração"),
+        (PlansManage, "Administração"),
     ];
 }

@@ -19,7 +19,7 @@ public sealed class PaymentMethodMutations
         [Service] ISender sender,
         CancellationToken ct)
     {
-        var result = await sender.Send(new CreatePaymentMethodCommand(input.Name), ct);
+        var result = await sender.Send(new CreatePaymentMethodCommand(input.Name, input.WalletId), ct);
         return result.IsSuccess
             ? new PaymentMethodPayload(result.Value!)
             : throw new GraphQLException(result.Errors.Select(e =>
