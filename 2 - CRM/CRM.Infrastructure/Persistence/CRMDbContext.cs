@@ -93,7 +93,7 @@ public sealed class CRMDbContext : DbContext
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         modelBuilder.Entity<ProfessionalSpecialtyLink>()
-            .HasQueryFilter(x => x.TenantId == _tenant.TenantId);
+            .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);
 
         modelBuilder.Entity<Professional>()
             .HasQueryFilter(x => !x.IsDeleted && x.TenantId == _tenant.TenantId);

@@ -122,9 +122,16 @@ public sealed class Appointment : TenantEntity
         Touch();
     }
 
-    public void MarkRescheduled()
+    public void Reschedule(DateTime newStartDateTime, DateTime newEndDateTime, decimal? overridePrice = null)
     {
-        Status = AppointmentStatus.Rescheduled;
+        StartDateTime = newStartDateTime;
+        EndDateTime = newEndDateTime;
+        if (overridePrice.HasValue)
+            Price = overridePrice.Value;
+        RescheduledAt = DateTime.UtcNow;
+        Status = AppointmentStatus.Suggested;
+        ConfirmedBy = null;
+        ConfirmedAt = null;
         Touch();
     }
 

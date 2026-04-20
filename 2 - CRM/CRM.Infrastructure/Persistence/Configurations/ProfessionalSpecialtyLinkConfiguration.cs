@@ -25,6 +25,8 @@ public sealed class ProfessionalSpecialtyLinkConfiguration : IEntityTypeConfigur
             .HasForeignKey(x => x.SpecialtyId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.ProfessionalId, x.SpecialtyId }).IsUnique();
+        builder.HasIndex(x => new { x.ProfessionalId, x.SpecialtyId })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
     }
 }

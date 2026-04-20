@@ -18,7 +18,7 @@ public sealed record CreateAppointmentCommand(
     string? MeetingLink,
     string? Notes,
     RecurrenceInput? Recurrence
-) : IRequest<Result<AppointmentDto>>;
+) : IRequest<Result<CreateAppointmentResult>>;
 
 public sealed record AddressInput(
     string Street,

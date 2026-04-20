@@ -13,4 +13,5 @@ public record AppointmentTaskPayload(AppointmentTaskDto AppointmentTask);
 
 public record CreateAppointmentPayload(
     AppointmentDto Appointment,
-    IReadOnlyList<AppointmentDto> RecurringAppointments);
+    IReadOnlyList<AppointmentDto> RecurringAppointments,
+    List<string> Warnings);

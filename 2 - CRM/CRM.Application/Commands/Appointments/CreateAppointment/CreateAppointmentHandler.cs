@@ -8,7 +8,7 @@ using MyCRM.Shared.Kernel.Results;
 
 namespace MyCRM.CRM.Application.Commands.Appointments.CreateAppointment;
 
-public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointmentCommand, Result<AppointmentDto>>
+public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointmentCommand, Result<CreateAppointmentResult>>
 {
     private readonly IAppointmentRepository _appointmentRepo;
     private readonly IAppointmentRecurrenceRepository _recurrenceRepo;
@@ -39,27 +39,27 @@ public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointment
         _tenant = tenant;
     }
 
-    public async Task<Result<AppointmentDto>> Handle(CreateAppointmentCommand request, CancellationToken ct)
+    public async Task<Result<CreateAppointmentResult>> Handle(CreateAppointmentCommand request, CancellationToken ct)
     {
         var warnings = new List<string>();
 
         var professional = await _professionalRepo.GetByIdAsync(request.ProfessionalId, ct);
         if (professional is null)
-            return Result<AppointmentDto>.Failure("PROFESSIONAL_NOT_FOUND", "Professional not found.");
+            return Result<CreateAppointmentResult>.Failure("PROFESSIONAL_NOT_FOUND", "Professional not found.");
         if (professional.Status != ProfessionalStatus.Active)
-            return Result<AppointmentDto>.Failure("PROFESSIONAL_NOT_ACTIVE", "Professional must be Active to schedule (RN-068).");
+            return Result<CreateAppointmentResult>.Failure("PROFESSIONAL_NOT_ACTIVE", "Professional must be Active to schedule (RN-068).");
 
         var patient = await _patientRepo.GetByIdAsync(request.PatientId, ct);
         if (patient is null)
-            return Result<AppointmentDto>.Failure("PATIENT_NOT_FOUND", "Patient not found.");
+            return Result<CreateAppointmentResult>.Failure("PATIENT_NOT_FOUND", "Patient not found.");
         if (patient.Status != PatientStatus.Active)
-            return Result<AppointmentDto>.Failure("PATIENT_NOT_ACTIVE", "Patient must be Active to schedule (RN-069).");
+            return Result<CreateAppointmentResult>.Failure("PATIENT_NOT_ACTIVE", "Patient must be Active to schedule (RN-069).");
 
         var service = await _serviceRepo.GetByIdAsync(request.ServiceId, ct);
         if (service is null)
-            return Result<AppointmentDto>.Failure("SERVICE_NOT_FOUND", "Service not found.");
+            return Result<CreateAppointmentResult>.Failure("SERVICE_NOT_FOUND", "Service not found.");
         if (!service.IsActive)
-            return Result<AppointmentDto>.Failure("SERVICE_NOT_ACTIVE", "Service must be active to schedule (RN-067).");
+            return Result<CreateAppointmentResult>.Failure("SERVICE_NOT_ACTIVE", "Service must be active to schedule (RN-067).");
 
         var allPS = await _professionalServiceRepo.GetAllAsync(ct);
         var professionalService = allPS.FirstOrDefault(ps =>
@@ -70,7 +70,7 @@ public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointment
         var price = request.OverridePrice ?? defaultPrice;
 
         if (price <= 0)
-            return Result<AppointmentDto>.Failure("APPOINTMENT_INVALID_PRICE", "Price must be greater than zero (RN-070).");
+            return Result<CreateAppointmentResult>.Failure("APPOINTMENT_INVALID_PRICE", "Price must be greater than zero (RN-070).");
 
         var endDateTime = request.StartDateTime.AddMinutes(durationMinutes);
 
@@ -134,10 +134,12 @@ public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointment
         await _appointmentRepo.AddAsync(appointment, ct);
         await _appointmentRepo.SaveChangesAsync(ct);
 
+        var recurringDtos = new List<AppointmentDto>();
+
         if (request.Recurrence is not null)
         {
             if (request.Recurrence.EndDate is null && request.Recurrence.MaxOccurrences is null)
-                return Result<AppointmentDto>.Failure("RECURRENCE_REQUIRES_END_CONDITION", "Either EndDate or MaxOccurrences must be provided (RN-057).");
+                return Result<CreateAppointmentResult>.Failure("RECURRENCE_REQUIRES_END_CONDITION", "Either EndDate or MaxOccurrences must be provided (RN-057).");
 
             var recurrence = AppointmentRecurrence.Create(
                 _tenant.TenantId,
@@ -161,12 +163,16 @@ public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointment
             _recurrenceRepo.Update(recurrence);
             await _appointmentRepo.SaveChangesAsync(ct);
             await _recurrenceRepo.SaveChangesAsync(ct);
+
+            recurringDtos = instances.Select(i => i.Adapt<AppointmentDto>()).ToList();
         }
 
         var dto = appointment!.Adapt<AppointmentDto>();
-        dto = dto with { Warnings = warnings };
 
-        return Result<AppointmentDto>.Success(dto);
+        return Result<CreateAppointmentResult>.Success(new CreateAppointmentResult(
+            dto with { Warnings = warnings },
+            recurringDtos,
+            warnings));
     }
 
     private List<Appointment> GenerateRecurrenceInstances(
@@ -179,13 +185,12 @@ public sealed class CreateAppointmentHandler : IRequestHandler<CreateAppointment
     {
         var instances = new List<Appointment>();
         var currentStart = parent.StartDateTime;
-        var currentEnd = parentEndDateTime;
         var count = 0;
 
         while (true)
         {
             currentStart = GetNextOccurrence(currentStart, recurrence.Frequency);
-            currentEnd = currentStart.AddMinutes((parentEndDateTime - parent.StartDateTime).TotalMinutes);
+            var currentEnd = currentStart.AddMinutes((parentEndDateTime - parent.StartDateTime).TotalMinutes);
             count++;
 
             if (recurrence.EndDate.HasValue && DateOnly.FromDateTime(currentStart) > recurrence.EndDate.Value)

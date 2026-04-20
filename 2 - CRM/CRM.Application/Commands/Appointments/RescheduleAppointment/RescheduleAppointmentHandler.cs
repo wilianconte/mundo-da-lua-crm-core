@@ -67,31 +67,12 @@ public sealed class RescheduleAppointmentHandler : IRequestHandler<RescheduleApp
                 warnings.Add("New appointment time is outside the professional's working hours (RN-059).");
         }
 
-        var previousId = appointment.Id;
-        appointment.MarkRescheduled();
-
-        var rescheduled = Appointment.Create(
-            appointment.TenantId,
-            appointment.ProfessionalId,
-            appointment.PatientId,
-            appointment.ServiceId,
-            request.NewStartDateTime,
-            newEndDateTime,
-            appointment.Type,
-            request.OverridePrice ?? appointment.Price,
-            appointment.PaymentReceiver,
-            appointment.PaymentMethodId,
-            appointment.Address,
-            appointment.MeetingLink,
-            recurrenceId: appointment.RecurrenceId,
-            rescheduledFrom: previousId,
-            notes: appointment.Notes);
+        appointment.Reschedule(request.NewStartDateTime, newEndDateTime, request.OverridePrice);
 
         _appointmentRepo.Update(appointment);
-        await _appointmentRepo.AddAsync(rescheduled, ct);
         await _appointmentRepo.SaveChangesAsync(ct);
 
-        var dto = rescheduled.Adapt<AppointmentDto>();
+        var dto = appointment.Adapt<AppointmentDto>();
         return Result<AppointmentDto>.Success(dto with { Warnings = warnings });
     }
 }

@@ -21,12 +21,16 @@ public sealed class AppointmentRepository : IAppointmentRepository
     public void Delete(Appointment entity) => entity.SoftDelete();
     public Task<int> SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 
-    public async Task<bool> HasConflictAsync(Guid professionalId, DateTime startDateTime, DateTime endDateTime, Guid? excludeId = null, CancellationToken ct = default) =>
-        await _db.Appointments.AnyAsync(
+    public async Task<bool> HasConflictAsync(Guid professionalId, DateTime startDateTime, DateTime endDateTime, Guid? excludeId = null, CancellationToken ct = default)
+    {
+        var activeStatuses = new[] { AppointmentStatus.Suggested, AppointmentStatus.Confirmed, AppointmentStatus.Rescheduled };
+        return await _db.Appointments.AnyAsync(
             x => x.ProfessionalId == professionalId
-              && (excludeId == null || x.Id != excludeId)
-              && x.StartDateTime < endDateTime
-              && x.EndDateTime > startDateTime, ct);
+            && activeStatuses.Contains(x.Status)
+            && (excludeId == null || x.Id != excludeId)
+            && x.StartDateTime < endDateTime
+            && x.EndDateTime > startDateTime, ct);
+    }
 
     public async Task<IReadOnlyList<Appointment>> GetByProfessionalAsync(Guid tenantId, Guid professionalId, DateOnly date, CancellationToken ct = default)
     {

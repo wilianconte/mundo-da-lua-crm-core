@@ -266,7 +266,7 @@ public sealed class SchedulingMutations
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess
-            ? new CreateAppointmentPayload(result.Value!, [])
+            ? new CreateAppointmentPayload(result.Value!.Appointment, result.Value!.RecurringAppointments, result.Value!.Warnings)
             : throw new GraphQLException(
                 result.Errors.Select(e => ErrorBuilder.New()
                     .SetMessage(e)
