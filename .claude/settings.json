@@ -3,14 +3,15 @@
     "defaultMode": "bypassPermissions"
   },
   "hooks": {
-    "SessionStart": [
+    "PostToolUse": [
       {
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"INSTRUÇÃO AUTOMÁTICA DE SESSÃO: Inicie imediatamente o monitoramento da pasta build/input/ invocando o skill /loop com o seguinte prompt: Verifique se há arquivos novos em `D:\\\\Dev\\\\Mundo da Lua\\\\mundo-da-lua-crm\\\\mundo-da-lua-crm-core\\\\build\\\\input\\\\`. Se houver algum arquivo .md: 1. Leia o arquivo 2. Carregue a skill /core 3. Crie um plano de implementação 4. Implemente as alterações necessárias 5. Rode dotnet build MyCRM.sln --verbosity minimal e dotnet test — zero erros exigido 6. Escreva o resultado em build/output/<YYYY-MM-DD>-<descricao>.md 7. Apague o arquivo de input processado. Se não houver arquivos novos, aguarde e verifique novamente.\"}}'",
-            "timeout": 5,
-            "statusMessage": "Iniciando monitoramento de build/input/..."
+            "command": "cd \"D:/Dev/Mundo da Lua/mundo-da-lua-crm/mundo-da-lua-crm-core\" && git status --porcelain 2>/dev/null | grep -q '\\.cs$' && dotnet build MyCRM.sln --no-restore --verbosity minimal 2>&1 | grep -E '^.*error' | head -5 || true",
+            "timeout": 60,
+            "statusMessage": "Verificando build (.cs alterado)..."
           }
         ]
       }
@@ -25,6 +26,18 @@
             "command": "cd \"D:/Dev/Mundo da Lua/mundo-da-lua-crm/mundo-da-lua-crm-core\" && dotnet build MyCRM.sln --verbosity minimal && dotnet test \"4 - Tests/UnitTests/MyCRM.UnitTests.csproj\" --no-build --verbosity minimal",
             "timeout": 300,
             "statusMessage": "Validando build e testes antes de criar o PR..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"D:/Dev/Mundo da Lua/mundo-da-lua-crm/mundo-da-lua-crm-core\" && git diff --stat && git status -s",
+            "timeout": 10,
+            "statusMessage": "Resumo de alterações..."
           }
         ]
       }
