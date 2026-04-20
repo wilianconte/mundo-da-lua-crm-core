@@ -97,6 +97,7 @@ jobs:
           echo "Aplicando imagem: $IMAGE"
           kubectl set image deployment/mundo-da-lua-crm-core \
             mundo-da-lua-crm-core=$IMAGE \
+            migrate=$IMAGE \
             -n mundo-da-lua-crm
           kubectl rollout status deployment/mundo-da-lua-crm-core \
             -n mundo-da-lua-crm --timeout=120s
